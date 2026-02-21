@@ -13,8 +13,20 @@ class EnsureSubscribed
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next)
     {
+        $user = $request->user();
+
+        if (!$user || !$user->isClient()) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        if (!$user->client?->isSubscribed()) {
+            return response()->json([
+                'message' => 'An active subscription is required to access this feature.',
+            ], 402);
+        }
+
         return $next($request);
     }
 }
