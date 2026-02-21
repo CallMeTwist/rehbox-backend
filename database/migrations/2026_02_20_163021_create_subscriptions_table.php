@@ -13,6 +13,14 @@ return new class extends Migration
     {
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('client_id')->constrained()->cascadeOnDelete();
+            $table->string('paystack_reference')->unique();
+            $table->string('paystack_subscription_code')->nullable();
+            $table->enum('plan', ['basic', 'standard', 'premium'])->default('standard');
+            $table->decimal('amount', 10, 2);
+            $table->enum('status', ['pending', 'active', 'expired', 'cancelled'])->default('pending');
+            $table->timestamp('starts_at')->nullable();
+            $table->timestamp('expires_at')->nullable();
             $table->timestamps();
         });
     }

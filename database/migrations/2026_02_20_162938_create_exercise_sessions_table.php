@@ -13,6 +13,16 @@ return new class extends Migration
     {
         Schema::create('exercise_sessions', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('client_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('exercise_plan_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('exercise_id')->constrained()->cascadeOnDelete();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('completed_at')->nullable();
+            $table->enum('status', ['started', 'completed', 'skipped'])->default('started');
+            $table->json('motion_data')->nullable(); // MediaPipe pose landmarks
+            $table->integer('form_score')->nullable(); // 0-100 AI score
+            $table->integer('coins_earned')->default(0);
+            $table->integer('rating')->nullable(); // 1-5 stars
             $table->timestamps();
         });
     }

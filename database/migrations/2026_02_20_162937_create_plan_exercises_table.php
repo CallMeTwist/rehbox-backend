@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('plan_exercises', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('exercise_plan_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('exercise_id')->constrained()->cascadeOnDelete();
+            $table->integer('order')->default(0);
+            $table->integer('sets')->default(3);
+            $table->integer('reps')->default(10);
+            $table->integer('hold_seconds')->default(0);
+            $table->text('pt_notes')->nullable(); // PT's specific instructions for this client
             $table->timestamps();
         });
     }
