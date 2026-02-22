@@ -72,7 +72,7 @@ class PhysiotherapistResource extends Resource
                     ->label('View Credentials')
                     ->icon('heroicon-o-document-text')
                     ->url(fn (Physiotherapist $record) =>
-                    route('filament.admin.credentials', $record)
+                    route('credentials.view', $record->id)
                     )
                     ->openUrlInNewTab()
                     ->visible(fn (Physiotherapist $record) =>

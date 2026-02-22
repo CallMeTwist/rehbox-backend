@@ -22,13 +22,14 @@ class PTAuthController extends Controller
             'hospital_or_clinic'=> 'nullable|string',
             'specialty'         => 'nullable|string',
             'city'              => 'nullable|string',
-            'credential_document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'credential_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'agreed_to_terms'   => 'required|accepted',
         ]);
 
         // Store credential document
-        $docPath = $request->file('credential_document')
-            ->store('credentials', 'private');
+        $docPath = $request->hasFile('credential_document')
+            ? $request->file('credential_document')->store('credentials', 'private')
+            : null;
 
         // Create user
         $user = User::create([
