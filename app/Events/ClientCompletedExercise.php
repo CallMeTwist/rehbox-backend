@@ -13,8 +13,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-
-class ClientStartedExercise implements ShouldBroadcast
+class ClientCompletedExercise implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets;
 
@@ -26,13 +25,12 @@ class ClientStartedExercise implements ShouldBroadcast
 
     public function broadcastOn(): Channel
     {
-        // PT listens on their own private channel
         return new Channel('pt.' . $this->plan->physiotherapist_id);
     }
 
     public function broadcastAs(): string
     {
-        return 'client.started';
+        return 'client.completed';
     }
 
     public function broadcastWith(): array
@@ -40,8 +38,9 @@ class ClientStartedExercise implements ShouldBroadcast
         return [
             'client_name'  => $this->client->user->name,
             'plan_title'   => $this->plan->title,
-            'session_id'   => $this->session->id,
-            'started_at'   => $this->session->started_at,
+            'coins_earned' => $this->session->coins_earned,
+            'form_score'   => $this->session->form_score,
+            'completed_at' => $this->session->completed_at,
         ];
     }
 }
