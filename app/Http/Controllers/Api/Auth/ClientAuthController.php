@@ -18,13 +18,14 @@ class ClientAuthController extends Controller
             'email'           => 'required|email|unique:users,email',
             'password'        => 'required|confirmed|min:8',
             'phone'           => 'nullable|string',
-            'activation_code' => 'required|string|exists:physiotherapists,activation_code',
+            'activation_code' => 'nullable|string|exists:physiotherapists,activation_code',
             'agreed_to_terms' => 'required|accepted',
         ]);
 
-        // Find the PT via activation code
-        $pt = Physiotherapist::where('activation_code', $data['activation_code'])->firstOrFail();
-
+        // Find PT only if code was provided
+        $pt = null;
+        if (!empty($data['activation_code'])) {
+            $pt = Physiotherapist::where('activation_code', $data['activation_code'])->first();
         // Enforce max 5 clients per PT
         if ($pt->clients()->count() >= 5) {
             return response()->json([
