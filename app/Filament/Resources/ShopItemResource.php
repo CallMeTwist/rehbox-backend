@@ -21,29 +21,49 @@ class ShopItemResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                //
-            ]);
+        return $form->schema([
+            Forms\Components\TextInput::make('name')->required(),
+            Forms\Components\Textarea::make('description')->rows(2),
+
+            Forms\Components\Select::make('category')
+                ->options([
+                    'hydration' => 'Hydration',
+                    'equipment' => 'Equipment',
+                    'recovery'  => 'Recovery',
+                    'apparel'   => 'Apparel',
+                ])->required(),
+
+            Forms\Components\Grid::make(2)->schema([
+                Forms\Components\TextInput::make('coin_cost')
+                    ->numeric()->nullable()
+                    ->helperText('Leave empty if coins not accepted'),
+                Forms\Components\TextInput::make('cash_price')
+                    ->numeric()->prefix('₦')->nullable()
+                    ->helperText('Leave empty if cash not accepted'),
+            ]),
+
+            Forms\Components\TextInput::make('stock')
+                ->numeric()->default(100)
+                ->helperText('-1 for unlimited stock'),
+
+            Forms\Components\FileUpload::make('image_url')
+                ->image()->directory('shop/items'),
+
+            Forms\Components\Toggle::make('is_active')->default(true),
+        ]);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                //
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+        return $table->columns([
+            Tables\Columns\ImageColumn::make('image_url')->label('Image'),
+            Tables\Columns\TextColumn::make('name')->searchable(),
+            Tables\Columns\TextColumn::badge('category'),
+            Tables\Columns\TextColumn::make('coin_cost')->suffix(' 🪙'),
+            Tables\Columns\TextColumn::make('cash_price')->prefix('₦'),
+            Tables\Columns\TextColumn::make('stock'),
+            Tables\Columns\IconColumn::make('is_active')->boolean(),
+        ]);
     }
 
     public static function getRelations(): array

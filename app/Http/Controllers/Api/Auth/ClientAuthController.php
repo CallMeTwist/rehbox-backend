@@ -22,15 +22,17 @@ class ClientAuthController extends Controller
             'agreed_to_terms' => 'required|accepted',
         ]);
 
-        // Find PT only if code was provided
         $pt = null;
+
         if (!empty($data['activation_code'])) {
             $pt = Physiotherapist::where('activation_code', $data['activation_code'])->first();
-        // Enforce max 5 clients per PT
-        if ($pt->clients()->count() >= 5) {
-            return response()->json([
-                'message' => 'This physiotherapist has reached their maximum client capacity (5).',
-            ], 422);
+
+            // Enforce max 5 clients per PT
+            if ($pt->clients()->count() >= 5) {
+                return response()->json([
+                    'message' => 'This physiotherapist has reached their maximum client capacity (5).',
+                ], 422);
+            }
         }
 
         $user = User::create([
@@ -41,10 +43,10 @@ class ClientAuthController extends Controller
         ]);
 
         Client::create([
-            'user_id'              => $user->id,
-            'physiotherapist_id'   => $pt->id,
-            'phone'                => $data['phone'] ?? null,
-            'subscription_status'  => 'inactive',
+            'user_id'            => $user->id,
+            'physiotherapist_id' => $pt?->id,
+            'phone'              => $data['phone'] ?? null,
+            'subscription_status'=> 'inactive',
         ]);
 
         $token = $user->createToken('client-token')->plainTextToken;
@@ -58,7 +60,7 @@ class ClientAuthController extends Controller
                 'email'               => $user->email,
                 'role'                => $user->role,
                 'subscription_status' => 'inactive',
-                'pt_name'             => $pt->user->name,
+                'pt_name'             => $pt?->user?->name,
             ],
         ], 201);
     }

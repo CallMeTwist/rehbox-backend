@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('coin_transactions', function (Blueprint $table) {
+        Schema::create('reminders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
-            $table->integer('amount');                      // positive = earned, negative = spent
-            $table->enum('type', ['earned', 'redeemed', 'bonus', 'expired']);
-            $table->string('description');
-            $table->nullableMorphs('source');               // links to session, order, etc.
+            $table->enum('type', ['exercise', 'posture', 'hydration', 'diet']);
+            $table->json('times');                          // ["08:00", "14:00", "20:00"]
+            $table->json('days');                           // ["monday", "wednesday", "friday"]
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('coin_transactions');
+        Schema::dropIfExists('reminders');
     }
 };

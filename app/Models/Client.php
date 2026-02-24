@@ -36,4 +36,54 @@ class Client extends Model
             && ($this->subscription_expires_at === null
                 || $this->subscription_expires_at->isFuture());
     }
+
+    public function coinTransactions()
+    {
+        return $this->hasMany(CoinTransaction::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function reminders()
+    {
+        return $this->hasMany(Reminder::class);
+    }
+
+// Award coins and log the transaction
+    public function awardCoins(int $amount, string $description, $source = null): void
+    {
+        $this->increment('coin_balance', $amount);
+
+        CoinTransaction::create([
+            'client_id'   => $this->id,
+            'amount'      => $amount,
+            'type'        => 'earned',
+            'description' => $description,
+            'source_type' => $source ? get_class($source) : null,
+            'source_id'   => $source?->id,
+        ]);
+    }
+
+// Spend coins and log the transaction
+    public function spendCoins(int $amount, string $description, $source = null): bool
+    {
+        if ($this->coin_balance < $amount) return false;
+
+        $this->decrement('coin_balance', $amount);
+
+        CoinTransaction::create([
+            'client_id'   => $this->id,
+            'amount'      => -$amount,
+            'type'        => 'redeemed',
+            'description' => $description,
+            'source_type' => $source ? get_class($source) : null,
+            'source_id'   => $source?->id,
+        ]);
+
+        return true;
+    }
+
 }

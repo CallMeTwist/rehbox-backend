@@ -69,16 +69,21 @@ use App\Http\Controllers\Api\Client\PlanController;
 use App\Http\Controllers\Api\Client\ProfileController;
 
 // ← add
+use App\Http\Controllers\Api\Client\ProgressController;
+use App\Http\Controllers\Api\Client\RewardController;
 use App\Http\Controllers\Api\Client\SessionController;
 
 // ← add
+use App\Http\Controllers\Api\Client\ShopController;
 use App\Http\Controllers\Api\Client\SubscriptionController;
 use App\Http\Controllers\Api\PT\ClientController;
+use App\Http\Controllers\Api\PT\EarningsController;
 use App\Http\Controllers\Api\PT\ExerciseLibraryController;
 use App\Http\Controllers\Api\PT\ExercisePlanController;
 use App\Http\Controllers\Api\Client\ChatController;
 
 // ← add
+use App\Http\Controllers\Api\PT\MotionReportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -120,6 +125,11 @@ Route::middleware('auth:sanctum')->group(function () {
             // ← Phase 3: PT chat (vetted only)
             Route::get('/chat', [ChatController::class, 'index']);
             Route::post('/chat', [ChatController::class, 'store']);
+
+            // Phase 4
+            Route::get('/earnings',                          [EarningsController::class, 'index']);
+            Route::get('/clients/{clientId}/motion-reports', [MotionReportController::class, 'clientReports']);
+            Route::get('/sessions/{sessionId}/detail',       [MotionReportController::class, 'sessionDetail']);
         });
     });
 
@@ -142,6 +152,18 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/sessions', [SessionController::class, 'start']);
             Route::put('/sessions/{session}/complete', [SessionController::class, 'complete']);
             Route::get('/sessions/history', [SessionController::class, 'history']);
+        });
+
+        Route::get('/progress',          [ProgressController::class, 'index']);
+        Route::get('/progress/report/{month}/{year}', [ProgressController::class, 'monthlyReport']);
+        Route::get('/rewards',           [RewardController::class, 'index']);
+        Route::get('/shop',              [ShopController::class, 'index']);
+        Route::get('/shop/orders',       [ShopController::class, 'myOrders']);
+
+        // Phase 4 — subscription required
+        Route::middleware('subscribed')->group(function () {
+            // existing session routes...
+            Route::post('/shop/{item}/purchase', [ShopController::class, 'purchase']);
         });
     });
 });
