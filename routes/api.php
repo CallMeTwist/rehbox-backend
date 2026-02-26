@@ -3,7 +3,7 @@
 //use App\Http\Controllers\Api\Auth\ClientAuthController;
 //use App\Http\Controllers\Api\Auth\PTAuthController;
 //use App\Http\Controllers\Api\Client\PlanController;
-//use App\Http\Controllers\Api\Client\ProfileController;
+//use App\Http\Controllers\Api\Client\PTProfileController;
 //use App\Http\Controllers\Api\Client\SubscriptionController;
 //use App\Http\Controllers\Api\PT\ClientController;
 //use App\Http\Controllers\Api\PT\ExerciseLibraryController;
@@ -57,8 +57,8 @@
 //        // Phase 2+ routes here
 //        Route::get('/plan',         [PlanController::class, 'myPlan']);
 //        Route::post('/subscribe',   [SubscriptionController::class, 'initialize']);
-//        Route::get('/profile',            [ProfileController::class, 'show']);
-//        Route::patch('/profile/language', [ProfileController::class, 'updateLanguage']);
+//        Route::get('/profile',            [PTProfileController::class, 'show']);
+//        Route::patch('/profile/language', [PTProfileController::class, 'updateLanguage']);
 //    });
 //});
 
@@ -77,6 +77,7 @@ use App\Http\Controllers\Api\Client\SessionController;
 use App\Http\Controllers\Api\Client\ShopController;
 use App\Http\Controllers\Api\Client\SubscriptionController;
 use App\Http\Controllers\Api\PT\ClientController;
+use App\Http\Controllers\Api\PT\DashboardController;
 use App\Http\Controllers\Api\PT\EarningsController;
 use App\Http\Controllers\Api\PT\ExerciseLibraryController;
 use App\Http\Controllers\Api\PT\ExercisePlanController;
@@ -84,6 +85,7 @@ use App\Http\Controllers\Api\Client\ChatController;
 
 // ← add
 use App\Http\Controllers\Api\PT\MotionReportController;
+use App\Http\Controllers\Api\PT\PTProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -121,6 +123,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/plans', [ExercisePlanController::class, 'store']);
             Route::put('/plans/{plan}', [ExercisePlanController::class, 'update']);
             Route::delete('/plans/{plan}', [ExercisePlanController::class, 'destroy']);
+            Route::patch('/clients/{clientId}/condition', [ClientController::class, 'updateCondition']);
+            Route::get('/dashboard', [DashboardController::class, 'stats']);
 
             // ← Phase 3: PT chat (vetted only)
             Route::get('/chat', [ChatController::class, 'index']);
@@ -130,6 +134,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/earnings',                          [EarningsController::class, 'index']);
             Route::get('/clients/{clientId}/motion-reports', [MotionReportController::class, 'clientReports']);
             Route::get('/sessions/{sessionId}/detail',       [MotionReportController::class, 'sessionDetail']);
+            Route::get('/profile',   [PTProfileController::class, 'show']);
+            Route::patch('/profile', [PTProfileController::class, 'update']);
         });
     });
 
@@ -141,6 +147,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // ← Phase 3: profile + language
         Route::get('/profile', [ProfileController::class, 'show']);
+        Route::patch('/profile',          [ProfileController::class, 'update']);
         Route::patch('/profile/language', [ProfileController::class, 'updateLanguage']);
 
         // ← Phase 3: chat (no subscription required)

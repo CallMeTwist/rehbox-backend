@@ -53,4 +53,18 @@ class ClientController extends Controller
 
         return response()->json($client);
     }
+
+    public function updateCondition(Request $request, int $clientId)
+    {
+        $pt     = $request->user()->physiotherapist;
+        $client = $pt->clients()->findOrFail($clientId);
+
+        $data = $request->validate([
+            'condition' => 'required|string|max:255',
+        ]);
+
+        $client->update(['condition' => $data['condition']]);
+
+        return response()->json(['message' => 'Condition updated.', 'condition' => $client->condition]);
+    }
 }
