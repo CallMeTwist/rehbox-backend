@@ -47,4 +47,9 @@ class Physiotherapist extends Model
         $this->update(['activation_code' => $code]);
         return $code;
     }
+
+    public function exercisePlans()
+    {
+        return $this->hasMany(ExercisePlan::class);
+    }
 }

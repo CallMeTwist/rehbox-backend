@@ -40,4 +40,12 @@ return [
         ],
     ],
 
+    'vapid' => [
+        'vapid' => [
+            'subject'  => 'mailto:sukaxavier@gmail.com',
+            'public'   => env('VAPID_PUBLIC_KEY'),
+            'private'  => env('VAPID_PRIVATE_KEY'),
+        ],
+    ],
+
 ];

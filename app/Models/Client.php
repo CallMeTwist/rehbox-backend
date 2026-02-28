@@ -30,6 +30,23 @@ class Client extends Model
         return $this->belongsTo(Physiotherapist::class);
     }
 
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+
+    public function exercisePlans()
+    {
+        return $this->hasMany(ExercisePlan::class);
+    }
+
+
+    public function exerciseSessions()
+    {
+        return $this->hasMany(ExerciseSession::class);
+    }
+
     public function isSubscribed(): bool
     {
         return $this->subscription_status === 'active'

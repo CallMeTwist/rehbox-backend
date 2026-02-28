@@ -70,6 +70,7 @@ use App\Http\Controllers\Api\Client\ProfileController;
 
 // ← add
 use App\Http\Controllers\Api\Client\ProgressController;
+use App\Http\Controllers\Api\Client\PushController;
 use App\Http\Controllers\Api\Client\RewardController;
 use App\Http\Controllers\Api\Client\SessionController;
 
@@ -116,6 +117,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/exercises', [ExerciseLibraryController::class, 'index']);
         Route::get('/exercises/{exercise}', [ExerciseLibraryController::class, 'show']);
+        Route::get('/dashboard', [DashboardController::class, 'stats']);
 
         Route::middleware('vetted')->group(function () {
             Route::get('/clients', [ClientController::class, 'index']);
@@ -124,12 +126,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/plans/{plan}', [ExercisePlanController::class, 'update']);
             Route::delete('/plans/{plan}', [ExercisePlanController::class, 'destroy']);
             Route::patch('/clients/{clientId}/condition', [ClientController::class, 'updateCondition']);
-            Route::get('/dashboard', [DashboardController::class, 'stats']);
-
             // ← Phase 3: PT chat (vetted only)
             Route::get('/chat', [ChatController::class, 'index']);
             Route::post('/chat', [ChatController::class, 'store']);
-
             // Phase 4
             Route::get('/earnings',                          [EarningsController::class, 'index']);
             Route::get('/clients/{clientId}/motion-reports', [MotionReportController::class, 'clientReports']);
@@ -145,6 +144,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/plan', [PlanController::class, 'myPlan']);
         Route::post('/subscribe', [SubscriptionController::class, 'initialize']);
 
+        Route::post('/push/subscribe',   [PushController::class, 'subscribe']);
+        Route::delete('/push/unsubscribe', [PushController::class, 'unsubscribe']);
+
         // ← Phase 3: profile + language
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::patch('/profile',          [ProfileController::class, 'update']);
@@ -153,24 +155,19 @@ Route::middleware('auth:sanctum')->group(function () {
         // ← Phase 3: chat (no subscription required)
         Route::get('/chat', [ChatController::class, 'index']);
         Route::post('/chat', [ChatController::class, 'store']);
-
-        // ← Phase 3: sessions (subscription required)
-        Route::middleware('subscribed')->group(function () {
-            Route::post('/sessions', [SessionController::class, 'start']);
-            Route::put('/sessions/{session}/complete', [SessionController::class, 'complete']);
-            Route::get('/sessions/history', [SessionController::class, 'history']);
-        });
-
         Route::get('/progress',          [ProgressController::class, 'index']);
         Route::get('/progress/report/{month}/{year}', [ProgressController::class, 'monthlyReport']);
         Route::get('/rewards',           [RewardController::class, 'index']);
         Route::get('/shop',              [ShopController::class, 'index']);
         Route::get('/shop/orders',       [ShopController::class, 'myOrders']);
 
-        // Phase 4 — subscription required
+        // ← Phase 3: sessions (subscription required)
         Route::middleware('subscribed')->group(function () {
-            // existing session routes...
+            Route::post('/sessions', [SessionController::class, 'start']);
+            Route::put('/sessions/{session}/complete', [SessionController::class, 'complete']);
+            Route::get('/sessions/history', [SessionController::class, 'history']);
             Route::post('/shop/{item}/purchase', [ShopController::class, 'purchase']);
         });
+
     });
 });

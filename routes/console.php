@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('subscriptions:check-expired')->daily();
+Schedule::command('reminders:send')->everyFifteenMinutes();
+Schedule::command('subscriptions:check-expired')->daily();
 
 Broadcast::channel('online', function ($user) {
     // Any authenticated user can join the online presence channel
