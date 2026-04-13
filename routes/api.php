@@ -1,30 +1,31 @@
 <?php
+
 //
-//use App\Http\Controllers\Api\Auth\ClientAuthController;
-//use App\Http\Controllers\Api\Auth\PTAuthController;
-//use App\Http\Controllers\Api\Client\PlanController;
-//use App\Http\Controllers\Api\Client\PTProfileController;
-//use App\Http\Controllers\Api\Client\SubscriptionController;
-//use App\Http\Controllers\Api\PT\ClientController;
-//use App\Http\Controllers\Api\PT\ExerciseLibraryController;
-//use App\Http\Controllers\Api\PT\ExercisePlanController;
-//use Illuminate\Http\Request;
-//use Illuminate\Support\Facades\Route;
+// use App\Http\Controllers\Api\Auth\ClientAuthController;
+// use App\Http\Controllers\Api\Auth\PTAuthController;
+// use App\Http\Controllers\Api\Client\PlanController;
+// use App\Http\Controllers\Api\Client\PTProfileController;
+// use App\Http\Controllers\Api\Client\SubscriptionController;
+// use App\Http\Controllers\Api\PT\ClientController;
+// use App\Http\Controllers\Api\PT\ExerciseLibraryController;
+// use App\Http\Controllers\Api\PT\ExercisePlanController;
+// use Illuminate\Http\Request;
+// use Illuminate\Support\Facades\Route;
 //
-//Route::get('/user', function (Request $request) {
+// Route::get('/user', function (Request $request) {
 //    return $request->user();
-//})->middleware('auth:sanctum');
+// })->middleware('auth:sanctum');
 //
-//// Public auth routes
-//Route::prefix('auth')->group(function () {
+// // Public auth routes
+// Route::prefix('auth')->group(function () {
 //    Route::post('/pt/register',     [PTAuthController::class, 'register']);
 //    Route::post('/pt/login',        [PTAuthController::class, 'login']);
 //    Route::post('/client/register', [ClientAuthController::class, 'register']);
 //    Route::post('/client/login',    [ClientAuthController::class, 'login']);
-//});
+// });
 //
-//// Authenticated routes
-//Route::middleware('auth:sanctum')->group(function () {
+// // Authenticated routes
+// Route::middleware('auth:sanctum')->group(function () {
 //
 //    Route::post('/auth/logout', [ClientAuthController::class, 'logout']);
 //
@@ -60,21 +61,19 @@
 //        Route::get('/profile',            [PTProfileController::class, 'show']);
 //        Route::patch('/profile/language', [PTProfileController::class, 'updateLanguage']);
 //    });
-//});
-
+// });
 
 use App\Http\Controllers\Api\Auth\ClientAuthController;
 use App\Http\Controllers\Api\Auth\PTAuthController;
+use App\Http\Controllers\Api\Client\ChatController;
 use App\Http\Controllers\Api\Client\PlanController;
-use App\Http\Controllers\Api\Client\ProfileController;
-
 // ← add
+use App\Http\Controllers\Api\Client\ProfileController;
 use App\Http\Controllers\Api\Client\ProgressController;
 use App\Http\Controllers\Api\Client\PushController;
 use App\Http\Controllers\Api\Client\RewardController;
-use App\Http\Controllers\Api\Client\SessionController;
-
 // ← add
+use App\Http\Controllers\Api\Client\SessionController;
 use App\Http\Controllers\Api\Client\ShopController;
 use App\Http\Controllers\Api\Client\SubscriptionController;
 use App\Http\Controllers\Api\PT\ClientController;
@@ -82,16 +81,22 @@ use App\Http\Controllers\Api\PT\DashboardController;
 use App\Http\Controllers\Api\PT\EarningsController;
 use App\Http\Controllers\Api\PT\ExerciseLibraryController;
 use App\Http\Controllers\Api\PT\ExercisePlanController;
-use App\Http\Controllers\Api\Client\ChatController;
-
 // ← add
 use App\Http\Controllers\Api\PT\MotionReportController;
 use App\Http\Controllers\Api\PT\PTProfileController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
+})->middleware('auth:sanctum');
+
+Route::post('/broadcasting/auth', function (Request $request) {
+    // Force Sanctum guard instead of default web guard
+    $request->headers->set('Accept', 'application/json');
+
+    return Broadcast::auth($request);
 })->middleware('auth:sanctum');
 
 // Public auth routes
@@ -109,6 +114,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/me', function (Request $request) {
         $user = $request->user()->load(['physiotherapist', 'client']);
+
         return response()->json(['user' => $user]);
     });
 
@@ -118,6 +124,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/exercises', [ExerciseLibraryController::class, 'index']);
         Route::get('/exercises/{exercise}', [ExerciseLibraryController::class, 'show']);
         Route::get('/dashboard', [DashboardController::class, 'stats']);
+
+        Route::get('/profile', [PTProfileController::class, 'show']);
+        Route::patch('/profile', [PTProfileController::class, 'update']);
 
         Route::middleware('vetted')->group(function () {
             Route::get('/clients', [ClientController::class, 'index']);
@@ -130,11 +139,10 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/chat', [ChatController::class, 'index']);
             Route::post('/chat', [ChatController::class, 'store']);
             // Phase 4
-            Route::get('/earnings',                          [EarningsController::class, 'index']);
+            Route::get('/earnings', [EarningsController::class, 'index']);
             Route::get('/clients/{clientId}/motion-reports', [MotionReportController::class, 'clientReports']);
-            Route::get('/sessions/{sessionId}/detail',       [MotionReportController::class, 'sessionDetail']);
-            Route::get('/profile',   [PTProfileController::class, 'show']);
-            Route::patch('/profile', [PTProfileController::class, 'update']);
+            Route::get('/sessions/{sessionId}/detail', [MotionReportController::class, 'sessionDetail']);
+
         });
     });
 
@@ -144,22 +152,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/plan', [PlanController::class, 'myPlan']);
         Route::post('/subscribe', [SubscriptionController::class, 'initialize']);
 
-        Route::post('/push/subscribe',   [PushController::class, 'subscribe']);
+        Route::post('/push/subscribe', [PushController::class, 'subscribe']);
         Route::delete('/push/unsubscribe', [PushController::class, 'unsubscribe']);
 
         // ← Phase 3: profile + language
         Route::get('/profile', [ProfileController::class, 'show']);
-        Route::patch('/profile',          [ProfileController::class, 'update']);
+        Route::patch('/profile', [ProfileController::class, 'update']);
         Route::patch('/profile/language', [ProfileController::class, 'updateLanguage']);
+        // routes/api.php — inside client group, no subscription required
+        Route::post('/connect-pt', [ProfileController::class, 'connectPT']);
 
         // ← Phase 3: chat (no subscription required)
         Route::get('/chat', [ChatController::class, 'index']);
         Route::post('/chat', [ChatController::class, 'store']);
-        Route::get('/progress',          [ProgressController::class, 'index']);
+        Route::get('/progress', [ProgressController::class, 'index']);
         Route::get('/progress/report/{month}/{year}', [ProgressController::class, 'monthlyReport']);
-        Route::get('/rewards',           [RewardController::class, 'index']);
-        Route::get('/shop',              [ShopController::class, 'index']);
-        Route::get('/shop/orders',       [ShopController::class, 'myOrders']);
+        Route::get('/rewards', [RewardController::class, 'index']);
+        Route::get('/shop', [ShopController::class, 'index']);
+        Route::get('/shop/orders', [ShopController::class, 'myOrders']);
 
         // ← Phase 3: sessions (subscription required)
         Route::middleware('subscribed')->group(function () {

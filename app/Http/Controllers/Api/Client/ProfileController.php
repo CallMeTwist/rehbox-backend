@@ -9,7 +9,7 @@ class ProfileController extends Controller
 {
     public function show(Request $request)
     {
-        $user   = $request->user()->load(['client.physiotherapist.user', 'client.subscriptions']);
+        $user = $request->user()->load(['client.physiotherapist.user', 'client.subscriptions']);
         $client = $user->client;
 
         $activeSub = $client->subscriptions()
@@ -19,40 +19,41 @@ class ProfileController extends Controller
 
         return response()->json([
             'user' => [
-                'id'    => $user->id,
-                'name'  => $user->name,
+                'id' => $user->id,
+                'name' => $user->name,
                 'email' => $user->email,
-                'role'  => $user->role,
+                'role' => $user->role,
             ],
             'client' => [
-                'id'                  => $client->id,
-                'phone'               => $client->phone,
-                'condition'           => $client->condition,
-                'coin_balance'        => $client->coin_balance,
+                'id' => $client->id,
+                'phone' => $client->phone,
+                'condition' => $client->condition,
+                'coin_balance' => $client->coin_balance,
                 'subscription_status' => $client->subscription_status,
                 'language_preference' => $client->language_preference,
-                'physiotherapist_id'  => $client->physiotherapist_id,
-                'physiotherapist'     => $client->physiotherapist ? [
-                    'id'   => $client->physiotherapist->id,
+                'physiotherapist_id' => $client->physiotherapist_id,
+                'physiotherapist' => $client->physiotherapist ? [
+                    'id' => $client->physiotherapist->id,
+                    'user_id' => $client->physiotherapist->user->id,
                     'name' => $client->physiotherapist->user->name,
                 ] : null,
             ],
             'subscription' => $activeSub ? [
-                'plan'       => $activeSub->plan,
-                'amount'     => $activeSub->amount,
+                'plan' => $activeSub->plan,
+                'amount' => $activeSub->amount,
                 'expires_at' => $activeSub->expires_at,
-                'status'     => $activeSub->status,
+                'status' => $activeSub->status,
             ] : null,
         ]);
     }
 
     public function update(Request $request)
     {
-        $user   = $request->user();
+        $user = $request->user();
         $client = $user->client;
 
         $data = $request->validate([
-            'name'  => 'sometimes|string|max:255',
+            'name' => 'sometimes|string|max:255',
             'phone' => 'sometimes|string|max:20',
         ]);
 
@@ -78,5 +79,28 @@ class ProfileController extends Controller
         ]);
 
         return response()->json(['message' => 'Language updated.']);
+    }
+
+    public function connectPT(Request $request)
+    {
+        $data = $request->validate([
+            'activation_code' => 'required|string|exists:physiotherapists,activation_code',
+        ]);
+
+        $client = $request->user()->client;
+
+        if ($client->physiotherapist_id) {
+            return response()->json([
+                'message' => 'You are already linked to a physiotherapist.',
+            ], 422);
+        }
+
+        $pt = \App\Models\Physiotherapist::where('activation_code', $data['activation_code'])->first();
+
+        $client->update(['physiotherapist_id' => $pt->id]);
+
+        return response()->json([
+            'message' => 'Successfully linked to '.$pt->user->name,
+        ]);
     }
 }

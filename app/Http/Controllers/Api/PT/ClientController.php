@@ -19,17 +19,19 @@ class ClientController extends Controller
             ->get()
             ->map(function ($client) {
                 $activePlan = $client->exercisePlans->first();
+
                 return [
-                    'id'                  => $client->id,
-                    'name'                => $client->user->name,
-                    'email'               => $client->user->email,
-                    'phone'               => $client->phone,
-                    'primary_condition'   => $client->primary_condition,
+                    'id' => $client->id,
+                    'user_id' => $client->user->id,
+                    'name' => $client->user->name,
+                    'email' => $client->user->email,
+                    'phone' => $client->phone,
+                    'primary_condition' => $client->primary_condition,
                     'subscription_status' => $client->subscription_status,
-                    'coin_balance'        => $client->coin_balance,
-                    'compliance_rate'     => $activePlan?->compliance_rate ?? 0,
-                    'active_plan_title'   => $activePlan?->title,
-                    'last_session'        => $activePlan?->sessions
+                    'coin_balance' => $client->coin_balance,
+                    'compliance_rate' => $activePlan?->compliance_rate ?? 0,
+                    'active_plan_title' => $activePlan?->title,
+                    'last_session' => $activePlan?->sessions
                         ->where('status', 'completed')
                         ->sortByDesc('completed_at')
                         ->first()?->completed_at,
@@ -38,25 +40,41 @@ class ClientController extends Controller
 
         return response()->json([
             'clients' => $clients,
-            'total'   => $clients->count(),
-            'slots_remaining' => 5 - $clients->count(),
+            'total' => $clients->count(),
         ]);
     }
 
     // Get a single client's full detail
     public function show(Request $request, int $clientId)
     {
-        $pt     = $request->user()->physiotherapist;
+        $pt = $request->user()->physiotherapist;
         $client = $pt->clients()
-            ->with(['user', 'exercisePlans.exercises', 'exercisePlans.sessions'])
+            ->with([
+                'user',
+                'exercisePlans.exercises',
+                'exercisePlans.sessions.exercise',
+            ])
             ->findOrFail($clientId);
+
+        // Calculate compliance
+        $totalSessions = $client->exerciseSessions()->where('status', 'completed')->count();
+        $daysWithSession = $client->exerciseSessions()
+            ->where('status', 'completed')
+            ->whereMonth('completed_at', now()->month)
+            ->selectRaw('DATE(completed_at) as day')
+            ->distinct()->count();
+        $compliance = now()->daysInMonth > 0
+            ? round(($daysWithSession / now()->daysInMonth) * 100)
+            : 0;
+
+        $client->compliance_rate = min($compliance, 100);
 
         return response()->json($client);
     }
 
     public function updateCondition(Request $request, int $clientId)
     {
-        $pt     = $request->user()->physiotherapist;
+        $pt = $request->user()->physiotherapist;
         $client = $pt->clients()->findOrFail($clientId);
 
         $data = $request->validate([

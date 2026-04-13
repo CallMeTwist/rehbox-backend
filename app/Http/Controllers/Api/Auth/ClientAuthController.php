@@ -14,53 +14,49 @@ class ClientAuthController extends Controller
     public function register(Request $request)
     {
         $data = $request->validate([
-            'name'            => 'required|string|max:255',
-            'email'           => 'required|email|unique:users,email',
-            'password'        => 'required|confirmed|min:8',
-            'phone'           => 'nullable|string',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|confirmed|min:8',
+            'phone' => 'nullable|string',
             'activation_code' => 'nullable|string|exists:physiotherapists,activation_code',
             'agreed_to_terms' => 'required|accepted',
         ]);
 
         $pt = null;
 
-        if (!empty($data['activation_code'])) {
+        if (! empty($data['activation_code'])) {
             $pt = Physiotherapist::where('activation_code', $data['activation_code'])->first();
-
-            // Enforce max 5 clients per PT
-            if ($pt->clients()->count() >= 5) {
-                return response()->json([
-                    'message' => 'This physiotherapist has reached their maximum client capacity (5).',
-                ], 422);
-            }
         }
 
         $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
+            'name' => $data['name'],
+            'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role'     => 'client',
+            'role' => 'client',
         ]);
 
         Client::create([
-            'user_id'            => $user->id,
+            'user_id' => $user->id,
             'physiotherapist_id' => $pt?->id,
-            'phone'              => $data['phone'] ?? null,
-            'subscription_status'=> 'inactive',
+            'phone' => $data['phone'] ?? null,
+            'subscription_status' => 'inactive',
         ]);
 
         $token = $user->createToken('client-token')->plainTextToken;
 
+        $client = $user->client;
+
         return response()->json([
             'message' => 'Registration successful! Subscribe to unlock your personalized plan.',
-            'token'   => $token,
-            'user'    => [
-                'id'                  => $user->id,
-                'name'                => $user->name,
-                'email'               => $user->email,
-                'role'                => $user->role,
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'client_id' => $client->id,
                 'subscription_status' => 'inactive',
-                'pt_name'             => $pt?->user?->name,
+                'pt_name' => $pt?->user?->name,
             ],
         ], 201);
     }
@@ -68,7 +64,7 @@ class ClientAuthController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate([
-            'email'    => 'required|email',
+            'email' => 'required|email',
             'password' => 'required',
         ]);
 
@@ -76,22 +72,23 @@ class ClientAuthController extends Controller
             ->where('role', 'client')
             ->first();
 
-        if (!$user || !Hash::check($data['password'], $user->password)) {
+        if (! $user || ! Hash::check($data['password'], $user->password)) {
             return response()->json(['message' => 'Invalid credentials.'], 401);
         }
 
         $client = $user->client;
-        $token  = $user->createToken('client-token')->plainTextToken;
+        $token = $user->createToken('client-token')->plainTextToken;
 
         return response()->json([
             'token' => $token,
-            'user'  => [
-                'id'                  => $user->id,
-                'name'                => $user->name,
-                'email'               => $user->email,
-                'role'                => $user->role,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'client_id' => $client?->id,
                 'subscription_status' => $client?->subscription_status,
-                'coin_balance'        => $client?->coin_balance,
+                'coin_balance' => $client?->coin_balance,
                 'language_preference' => $client?->language_preference,
             ],
         ]);
@@ -100,6 +97,7 @@ class ClientAuthController extends Controller
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
+
         return response()->json(['message' => 'Logged out.']);
     }
 }

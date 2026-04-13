@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Exercise;
 use Illuminate\Http\Request;
 
-
 class ExerciseLibraryController extends Controller
 {
     // Browse all exercises — available to ALL PTs (vetted and unvetted)
@@ -14,21 +13,25 @@ class ExerciseLibraryController extends Controller
     {
         $query = Exercise::active();
 
+        if ($request->filled('area')) {
+            $query->area($request->area);
+        }
+
         if ($request->filled('category')) {
             $query->category($request->category);
         }
 
         if ($request->filled('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
+            $query->where('title', 'like', '%'.$request->search.'%');
         }
 
         if ($request->filled('difficulty')) {
             $query->where('difficulty', $request->difficulty);
         }
 
-        $exercises = $query->paginate(20);
+        $exercises = $query->orderBy('area')->orderBy('category')->orderBy('title')->get();
 
-        return response()->json($exercises);
+        return response()->json(['data' => $exercises]);
     }
 
     public function show(Exercise $exercise)
