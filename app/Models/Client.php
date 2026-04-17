@@ -6,12 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Client extends Model
 {
-//    protected $fillable = [
-//        'user_id', 'physiotherapist_id', 'phone', 'date_of_birth',
-//        'gender', 'primary_condition', 'subscription_status',
-//        'subscription_expires_at', 'paystack_customer_code',
-//        'language_preference', 'coin_balance',
-//    ];
+    //    protected $fillable = [
+    //        'user_id', 'physiotherapist_id', 'phone', 'date_of_birth',
+    //        'gender', 'primary_condition', 'subscription_status',
+    //        'subscription_expires_at', 'paystack_customer_code',
+    //        'language_preference', 'coin_balance',
+    //    ];
 
     protected $guarded = [];
 
@@ -35,12 +35,10 @@ class Client extends Model
         return $this->hasMany(Subscription::class);
     }
 
-
     public function exercisePlans()
     {
         return $this->hasMany(ExercisePlan::class);
     }
-
 
     public function exerciseSessions()
     {
@@ -52,6 +50,12 @@ class Client extends Model
         return $this->subscription_status === 'active'
             && ($this->subscription_expires_at === null
                 || $this->subscription_expires_at->isFuture());
+    }
+
+    public function isStandard(): bool
+    {
+        return in_array($this->subscription_plan, ['standard', 'enterprise'])
+            && $this->isSubscribed();
     }
 
     public function coinTransactions()
@@ -69,38 +73,39 @@ class Client extends Model
         return $this->hasMany(Reminder::class);
     }
 
-// Award coins and log the transaction
+    // Award coins and log the transaction
     public function awardCoins(int $amount, string $description, $source = null): void
     {
         $this->increment('coin_balance', $amount);
 
         CoinTransaction::create([
-            'client_id'   => $this->id,
-            'amount'      => $amount,
-            'type'        => 'earned',
+            'client_id' => $this->id,
+            'amount' => $amount,
+            'type' => 'earned',
             'description' => $description,
             'source_type' => $source ? get_class($source) : null,
-            'source_id'   => $source?->id,
+            'source_id' => $source?->id,
         ]);
     }
 
-// Spend coins and log the transaction
+    // Spend coins and log the transaction
     public function spendCoins(int $amount, string $description, $source = null): bool
     {
-        if ($this->coin_balance < $amount) return false;
+        if ($this->coin_balance < $amount) {
+            return false;
+        }
 
         $this->decrement('coin_balance', $amount);
 
         CoinTransaction::create([
-            'client_id'   => $this->id,
-            'amount'      => -$amount,
-            'type'        => 'redeemed',
+            'client_id' => $this->id,
+            'amount' => -$amount,
+            'type' => 'redeemed',
             'description' => $description,
             'source_type' => $source ? get_class($source) : null,
-            'source_id'   => $source?->id,
+            'source_id' => $source?->id,
         ]);
 
         return true;
     }
-
 }
