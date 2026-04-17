@@ -16,11 +16,14 @@ class Exercise extends Model
         'instructions_yo', 'instructions_ig', 'instructions_ha', 'is_active',
         'correct_angles',
         'is_personalized',
+        'exercise_type',
+        'tracking_config',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'correct_angles' => 'array',
+        'tracking_config' => 'array',
     ];
 
     // Return instructions in client's preferred language
