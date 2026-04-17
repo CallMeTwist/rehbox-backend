@@ -12,6 +12,10 @@ class Message extends Model
         'client_id',
         'body',
         'read_at',
+        'file_url',
+        'file_type',
+        'file_name',
+        'file_size',
     ];
 
     protected $casts = [
