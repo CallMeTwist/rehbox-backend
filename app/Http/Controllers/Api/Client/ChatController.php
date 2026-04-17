@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Client;
 
 use App\Events\NewMessageReceived;
 use App\Http\Controllers\Controller;
+use App\Models\AppNotification;
 use App\Models\Client;
 use App\Models\Message;
 use Illuminate\Http\Request;
@@ -84,6 +85,15 @@ class ChatController extends Controller
         $message->load('sender:id,name,role');
 
         event(new NewMessageReceived($message));
+
+        // Notify the receiver
+        AppNotification::create([
+            'user_id' => $message->receiver_id,
+            'type' => 'message_received',
+            'title' => 'New message',
+            'body' => $request->user()->name.': '.str($message->body)->limit(60),
+            'data' => ['client_id' => $message->client_id],
+        ]);
 
         return response()->json(['message' => $message], 201);
     }
