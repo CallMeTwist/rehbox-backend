@@ -7,12 +7,13 @@ use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
 use App\Models\Client;
 use App\Models\Message;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ChatController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $user = $request->user();
         $clientId = $request->query('client_id');
@@ -39,7 +40,7 @@ class ChatController extends Controller
         return response()->json(['messages' => $messages]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
             'body' => 'nullable|string|max:5000',
@@ -116,7 +117,7 @@ class ChatController extends Controller
             'user_id' => $message->receiver_id,
             'type' => 'message_received',
             'title' => 'New message',
-            'body' => $request->user()->name.': '.str($message->body)->limit(60),
+            'body' => $request->user()->name.': '.(str($message->body)->limit(60) ?: '[file]'),
             'data' => ['client_id' => $message->client_id],
         ]);
 

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\Physiotherapist;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
-    public function show(Request $request)
+    public function show(Request $request): JsonResponse
     {
         $user = $request->user()->load(['client.physiotherapist.user', 'client.subscriptions']);
         $client = $user->client;
@@ -49,7 +51,7 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function update(Request $request)
+    public function update(Request $request): JsonResponse
     {
         $user = $request->user();
         $client = $user->client;
@@ -73,7 +75,7 @@ class ProfileController extends Controller
         return response()->json(['message' => 'Profile updated.']);
     }
 
-    public function updateLanguage(Request $request)
+    public function updateLanguage(Request $request): JsonResponse
     {
         $data = $request->validate([
             'language' => 'required|in:en,pcm,yo,ig,ha',
@@ -86,7 +88,7 @@ class ProfileController extends Controller
         return response()->json(['message' => 'Language updated.']);
     }
 
-    public function connectPT(Request $request)
+    public function connectPT(Request $request): JsonResponse
     {
         $data = $request->validate([
             'activation_code' => 'required|string|exists:physiotherapists,activation_code',
@@ -100,7 +102,7 @@ class ProfileController extends Controller
             ], 422);
         }
 
-        $pt = \App\Models\Physiotherapist::where('activation_code', $data['activation_code'])->first();
+        $pt = Physiotherapist::where('activation_code', $data['activation_code'])->first();
 
         $client->update(['physiotherapist_id' => $pt->id]);
 

@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Api\PT;
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
 use App\Models\ExercisePlan;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ExercisePlanController extends Controller
 {
     // Create a new plan and assign to a client
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
             'client_id' => 'required|integer|exists:clients,id',
@@ -79,7 +80,7 @@ class ExercisePlanController extends Controller
     }
 
     // Update an existing plan
-    public function update(Request $request, ExercisePlan $plan)
+    public function update(Request $request, ExercisePlan $plan): JsonResponse
     {
         $pt = $request->user()->physiotherapist;
 
@@ -103,18 +104,6 @@ class ExercisePlanController extends Controller
 
         $plan->update($data);
 
-        // Notify client of the update
-        AppNotification::create([
-            'user_id' => $plan->client->user_id,
-            'type' => 'plan_updated',
-            'title' => 'Exercise plan updated',
-            'body' => "Your physiotherapist updated your plan: {$plan->title}",
-            'data' => [
-                'plan_id' => $plan->id,
-                'changes' => array_keys($data),
-            ],
-        ]);
-
         if (isset($data['exercises'])) {
             $plan->exercises()->detach();
             foreach ($data['exercises'] as $index => $ex) {
@@ -128,13 +117,25 @@ class ExercisePlanController extends Controller
             }
         }
 
+        // Notify client of the update (after exercise sync so client sees updated data)
+        AppNotification::create([
+            'user_id' => $plan->client->user_id,
+            'type' => 'plan_updated',
+            'title' => 'Exercise plan updated',
+            'body' => "Your physiotherapist updated your plan: {$plan->title}",
+            'data' => [
+                'plan_id' => $plan->id,
+                'changes' => array_keys($data),
+            ],
+        ]);
+
         return response()->json([
             'message' => 'Plan updated.',
             'plan' => $plan->load('exercises'),
         ]);
     }
 
-    public function destroy(Request $request, ExercisePlan $plan)
+    public function destroy(Request $request, ExercisePlan $plan): JsonResponse
     {
         $pt = $request->user()->physiotherapist;
         if ($plan->physiotherapist_id !== $pt->id) {
