@@ -52,7 +52,7 @@ class Client extends Model
                 || $this->subscription_expires_at->isFuture());
     }
 
-    public function isStandard(): bool
+    public function hasStandardAccess(): bool
     {
         return in_array($this->subscription_plan, ['standard', 'enterprise'])
             && $this->isSubscribed();
