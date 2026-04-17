@@ -8,6 +8,7 @@ use App\Models\AppNotification;
 use App\Models\Client;
 use App\Models\Message;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ChatController extends Controller
 {
@@ -41,10 +42,15 @@ class ChatController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'body' => 'required|string|max:2000',
+            'body' => 'nullable|string|max:5000',
+            'file' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf|max:10240',
             'client_id' => 'sometimes|integer|exists:clients,id',
             'receiver_id' => 'sometimes|integer|exists:users,id',
         ]);
+
+        if (empty($data['body']) && ! $request->hasFile('file')) {
+            return response()->json(['message' => 'Message body or file is required.'], 422);
+        }
 
         $user = $request->user();
 
@@ -75,11 +81,30 @@ class ChatController extends Controller
             }
         }
 
+        $fileUrl = null;
+        $fileType = null;
+        $fileName = null;
+        $fileSize = null;
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $mimeType = $file->getMimeType();
+            $fileType = str_starts_with($mimeType, 'image/') ? 'image' : 'pdf';
+            $fileName = $file->getClientOriginalName();
+            $fileSize = $file->getSize();
+            $path = $file->store('chat-files', 'public');
+            $fileUrl = Storage::disk('public')->url($path);
+        }
+
         $message = Message::create([
             'sender_id' => $user->id,
             'receiver_id' => $receiverId,
             'client_id' => $clientId,
-            'body' => $data['body'],
+            'body' => $data['body'] ?? null,
+            'file_url' => $fileUrl,
+            'file_type' => $fileType,
+            'file_name' => $fileName,
+            'file_size' => $fileSize,
         ]);
 
         $message->load('sender:id,name,role');
