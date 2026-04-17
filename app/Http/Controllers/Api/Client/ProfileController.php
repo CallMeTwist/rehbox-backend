@@ -30,6 +30,8 @@ class ProfileController extends Controller
                 'condition' => $client->condition,
                 'coin_balance' => $client->coin_balance,
                 'subscription_status' => $client->subscription_status,
+                'subscription_plan' => $client->subscription_plan,
+                'reminders_enabled' => $client->reminders_enabled,
                 'language_preference' => $client->language_preference,
                 'physiotherapist_id' => $client->physiotherapist_id,
                 'physiotherapist' => $client->physiotherapist ? [
@@ -55,14 +57,17 @@ class ProfileController extends Controller
         $data = $request->validate([
             'name' => 'sometimes|string|max:255',
             'phone' => 'sometimes|string|max:20',
+            'reminders_enabled' => 'sometimes|boolean',
         ]);
 
         if (isset($data['name'])) {
             $user->update(['name' => $data['name']]);
         }
 
-        if (isset($data['phone'])) {
-            $client->update(['phone' => $data['phone']]);
+        $clientData = array_intersect_key($data, array_flip(['phone', 'reminders_enabled']));
+
+        if ($clientData) {
+            $client->update($clientData);
         }
 
         return response()->json(['message' => 'Profile updated.']);
