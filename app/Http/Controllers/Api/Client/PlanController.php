@@ -36,6 +36,7 @@ class PlanController extends Controller
         return response()->json([
             'plans' => $plans,
             'active_plan' => $activePlan,
+            'plan' => $activePlan,
             'compliance_rate' => $activePlan?->compliance_rate ?? 0,
         ]);
     }
