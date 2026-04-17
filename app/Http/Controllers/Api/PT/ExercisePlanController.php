@@ -10,6 +10,14 @@ use Illuminate\Http\Request;
 
 class ExercisePlanController extends Controller
 {
+    public function show(Request $request, ExercisePlan $plan): \Illuminate\Http\JsonResponse
+    {
+        $pt = $request->user()->physiotherapist;
+        abort_unless($plan->physiotherapist_id === $pt->id, 403);
+
+        return response()->json(['plan' => $plan->load('exercises')]);
+    }
+
     // Create a new plan and assign to a client
     public function store(Request $request): JsonResponse
     {

@@ -137,6 +137,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('vetted')->group(function () {
             Route::get('/clients', [ClientController::class, 'index']);
             Route::get('/clients/{clientId}', [ClientController::class, 'show']);
+            Route::get('/plans/{plan}', [ExercisePlanController::class, 'show']);
             Route::post('/plans', [ExercisePlanController::class, 'store']);
             Route::put('/plans/{plan}', [ExercisePlanController::class, 'update']);
             Route::delete('/plans/{plan}', [ExercisePlanController::class, 'destroy']);
