@@ -67,13 +67,13 @@ use App\Http\Controllers\Api\Auth\ClientAuthController;
 use App\Http\Controllers\Api\Auth\PTAuthController;
 use App\Http\Controllers\Api\Client\ChatController;
 use App\Http\Controllers\Api\Client\PlanController;
-// ← add
 use App\Http\Controllers\Api\Client\ProfileController;
+// ← add
 use App\Http\Controllers\Api\Client\ProgressController;
 use App\Http\Controllers\Api\Client\PushController;
 use App\Http\Controllers\Api\Client\RewardController;
-// ← add
 use App\Http\Controllers\Api\Client\SessionController;
+// ← add
 use App\Http\Controllers\Api\Client\ShopController;
 use App\Http\Controllers\Api\Client\SubscriptionController;
 use App\Http\Controllers\Api\PT\ClientController;
@@ -81,9 +81,10 @@ use App\Http\Controllers\Api\PT\DashboardController;
 use App\Http\Controllers\Api\PT\EarningsController;
 use App\Http\Controllers\Api\PT\ExerciseLibraryController;
 use App\Http\Controllers\Api\PT\ExercisePlanController;
-// ← add
 use App\Http\Controllers\Api\PT\MotionReportController;
+// ← add
 use App\Http\Controllers\Api\PT\PTProfileController;
+use App\Http\Controllers\Api\Shared\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -117,6 +118,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
         return response()->json(['user' => $user]);
     });
+
+    // Notifications (shared — both PT and client)
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
 
     // ── PT routes ────────────────────────────────────────────────────
     Route::prefix('pt')->middleware('role:pt')->group(function () {
