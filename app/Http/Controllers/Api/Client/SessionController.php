@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Client;
 use App\Events\ClientCompletedExercise;
 use App\Events\ClientStartedExercise;
 use App\Http\Controllers\Controller;
+use App\Models\AppNotification;
 use App\Models\ExercisePlan;
 use App\Models\ExerciseSession;
 use Illuminate\Http\Request;
@@ -70,9 +71,9 @@ class SessionController extends Controller
         $client->awardCoins($coinsEarned, "Completed: {$exerciseTitle}", $session);
 
         // Notify PT if plan exists
-        $plan = \App\Models\ExercisePlan::with('physiotherapist')->find($session->exercise_plan_id);
+        $plan = ExercisePlan::with('physiotherapist')->find($session->exercise_plan_id);
         if ($plan?->physiotherapist) {
-            \App\Models\AppNotification::create([
+            AppNotification::create([
                 'user_id' => $plan->physiotherapist->user_id,
                 'type' => 'session_completed',
                 'title' => 'Client completed a session',

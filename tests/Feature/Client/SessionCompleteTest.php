@@ -59,4 +59,7 @@ it('awards coins via awardCoins() and creates a CoinTransaction when completing 
 
     // Client coin_balance must be 3
     expect($client->fresh()->coin_balance)->toBe(3);
+
+    // PT should also receive a notification
+    expect(\App\Models\AppNotification::where('user_id', $ptUser->id)->exists())->toBeTrue();
 });
