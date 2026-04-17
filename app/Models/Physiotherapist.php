@@ -2,17 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class Physiotherapist extends Model
 {
-//    protected $fillable = [
-//        'user_id', 'license_number', 'hospital_or_clinic', 'specialty',
-//        'phone', 'city', 'country', 'credential_document_path',
-//        'profile_photo_path', 'vetting_status', 'rejection_reason',
-//        'vetted_at', 'activation_code',
-//    ];
+    use HasFactory;
+    //    protected $fillable = [
+    //        'user_id', 'license_number', 'hospital_or_clinic', 'specialty',
+    //        'phone', 'city', 'country', 'credential_document_path',
+    //        'profile_photo_path', 'vetting_status', 'rejection_reason',
+    //        'vetted_at', 'activation_code',
+    //    ];
 
     protected $guarded = [];
 
@@ -45,6 +47,7 @@ class Physiotherapist extends Model
     {
         $code = strtoupper(Str::random(8));
         $this->update(['activation_code' => $code]);
+
         return $code;
     }
 

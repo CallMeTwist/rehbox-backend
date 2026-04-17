@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ExercisePlan extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'physiotherapist_id', 'client_id', 'title', 'notes',
         'status', 'duration_weeks', 'frequency', 'reminder_times', 'start_date',
@@ -13,7 +16,7 @@ class ExercisePlan extends Model
 
     protected $casts = [
         'reminder_times' => 'array',
-        'start_date'     => 'date',
+        'start_date' => 'date',
     ];
 
     public function physiotherapist()
@@ -42,8 +45,9 @@ class ExercisePlan extends Model
     // Compliance: % of sessions completed vs expected
     public function getComplianceRateAttribute(): int
     {
-        $total     = $this->sessions()->count();
+        $total = $this->sessions()->count();
         $completed = $this->sessions()->where('status', 'completed')->count();
+
         return $total > 0 ? (int) round(($completed / $total) * 100) : 0;
     }
 }

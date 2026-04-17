@@ -7,6 +7,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Ensure exercises table is empty before changing ENUMs
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
         DB::statement('TRUNCATE TABLE plan_exercises');
@@ -29,6 +33,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         DB::statement("ALTER TABLE exercises MODIFY COLUMN category ENUM('neck','shoulder','elbow_forearm_wrist','back','lower_limb') NOT NULL DEFAULT 'neck'");
         DB::statement('ALTER TABLE exercises DROP COLUMN area');
     }
