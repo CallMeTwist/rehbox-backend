@@ -15,6 +15,7 @@ class Exercise extends Model
         'default_hold_seconds', 'instructions_en', 'instructions_pcm',
         'instructions_yo', 'instructions_ig', 'instructions_ha', 'is_active',
         'correct_angles',
+        'is_personalized',
     ];
 
     protected $casts = [
