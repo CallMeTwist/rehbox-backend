@@ -9,7 +9,6 @@ use App\Models\Client;
 use App\Models\Message;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ChatController extends Controller
 {
@@ -94,14 +93,14 @@ class ChatController extends Controller
             $fileName = $file->getClientOriginalName();
             $fileSize = $file->getSize();
             $path = $file->store('chat-files', 'public');
-            $fileUrl = Storage::disk('public')->url($path);
+            $fileUrl = url('/api/chat/files/'.basename($path));
         }
 
         $message = Message::create([
             'sender_id' => $user->id,
             'receiver_id' => $receiverId,
             'client_id' => $clientId,
-            'body' => $data['body'] ?? null,
+            'body' => $data['body'] ?? '',
             'file_url' => $fileUrl,
             'file_type' => $fileType,
             'file_name' => $fileName,

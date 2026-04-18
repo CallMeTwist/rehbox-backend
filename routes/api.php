@@ -65,15 +65,16 @@
 
 use App\Http\Controllers\Api\Auth\ClientAuthController;
 use App\Http\Controllers\Api\Auth\PTAuthController;
+use App\Http\Controllers\Api\ChatFileController;
 use App\Http\Controllers\Api\Client\ChatController;
 use App\Http\Controllers\Api\Client\PlanController;
-use App\Http\Controllers\Api\Client\ProfileController;
 // ← add
+use App\Http\Controllers\Api\Client\ProfileController;
 use App\Http\Controllers\Api\Client\ProgressController;
 use App\Http\Controllers\Api\Client\PushController;
 use App\Http\Controllers\Api\Client\RewardController;
-use App\Http\Controllers\Api\Client\SessionController;
 // ← add
+use App\Http\Controllers\Api\Client\SessionController;
 use App\Http\Controllers\Api\Client\ShopController;
 use App\Http\Controllers\Api\Client\SubscriptionController;
 use App\Http\Controllers\Api\PT\ClientController;
@@ -81,8 +82,8 @@ use App\Http\Controllers\Api\PT\DashboardController;
 use App\Http\Controllers\Api\PT\EarningsController;
 use App\Http\Controllers\Api\PT\ExerciseLibraryController;
 use App\Http\Controllers\Api\PT\ExercisePlanController;
-use App\Http\Controllers\Api\PT\MotionReportController;
 // ← add
+use App\Http\Controllers\Api\PT\MotionReportController;
 use App\Http\Controllers\Api\PT\PTProfileController;
 use App\Http\Controllers\Api\Shared\NotificationController;
 use Illuminate\Http\Request;
@@ -118,6 +119,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
         return response()->json(['user' => $user]);
     });
+
+    // Chat file download (shared — both PT and client)
+    Route::get('/chat/files/{filename}', [ChatFileController::class, 'show'])
+        ->where('filename', '.+');
 
     // Notifications (shared — both PT and client)
     Route::get('/notifications', [NotificationController::class, 'index']);

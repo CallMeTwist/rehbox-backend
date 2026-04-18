@@ -12,7 +12,7 @@ class ProgressController extends Controller
     public function index(Request $request)
     {
         $client = $request->user()->client;
-        $now    = Carbon::now();
+        $now = Carbon::now();
 
         // Sessions this month
         $monthlySessions = ExerciseSession::where('client_id', $client->id)
@@ -25,13 +25,14 @@ class ProgressController extends Controller
         // Last 8 weeks for the chart
         $weeklyData = collect(range(7, 0))->map(function ($weeksAgo) use ($client) {
             $start = Carbon::now()->subWeeks($weeksAgo)->startOfWeek();
-            $end   = Carbon::now()->subWeeks($weeksAgo)->endOfWeek();
+            $end = Carbon::now()->subWeeks($weeksAgo)->endOfWeek();
             $count = ExerciseSession::where('client_id', $client->id)
                 ->where('status', 'completed')
                 ->whereBetween('completed_at', [$start, $end])
                 ->count();
+
             return [
-                'week'     => $start->format('d M'),
+                'week' => $start->format('d M'),
                 'sessions' => $count,
             ];
         });
@@ -63,17 +64,17 @@ class ProgressController extends Controller
         return response()->json([
             'summary' => [
                 'total_sessions_this_month' => $monthlySessions->count(),
-                'current_streak_days'       => $streak,
-                'avg_form_score'            => round($avgFormScore ?? 0),
-                'coins_earned_this_month'   => $totalCoinsEarned,
-                'top_category'              => $topCategory?->category,
+                'current_streak_days' => $streak,
+                'avg_form_score' => round($avgFormScore ?? 0),
+                'coins_earned_this_month' => $totalCoinsEarned,
+                'top_category' => $topCategory?->category,
             ],
-            'weekly_chart'   => $weeklyData,
-            'recent_sessions'=> $monthlySessions->take(10)->map(fn($s) => [
-                'id'           => $s->id,
-                'exercise'     => $s->exercise->title,
-                'category'     => $s->exercise->category,
-                'form_score'   => $s->form_score,
+            'weekly_chart' => $weeklyData,
+            'recent_sessions' => $monthlySessions->take(10)->map(fn ($s) => [
+                'id' => $s->id,
+                'exercise' => $s->exercise?->title,
+                'category' => $s->exercise?->category,
+                'form_score' => $s->form_score,
                 'coins_earned' => $s->coins_earned,
                 'completed_at' => $s->completed_at,
             ]),
@@ -83,9 +84,9 @@ class ProgressController extends Controller
     // Monthly PDF/data report
     public function monthlyReport(Request $request, int $month, int $year)
     {
-        $client   = $request->user()->client;
-        $start    = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $end      = $start->copy()->endOfMonth();
+        $client = $request->user()->client;
+        $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $end = $start->copy()->endOfMonth();
 
         $sessions = ExerciseSession::where('client_id', $client->id)
             ->where('status', 'completed')
@@ -98,22 +99,22 @@ class ProgressController extends Controller
             ->first();
 
         return response()->json([
-            'period'         => $start->format('F Y'),
-            'client_name'    => $client->user->name,
-            'plan_title'     => $plan?->title,
-            'pt_name'        => $client->physiotherapist?->user->name,
+            'period' => $start->format('F Y'),
+            'client_name' => $client->user->name,
+            'plan_title' => $plan?->title,
+            'pt_name' => $client->physiotherapist?->user->name,
             'total_sessions' => $sessions->count(),
             'avg_form_score' => round($sessions->avg('form_score') ?? 0),
-            'total_coins'    => $sessions->sum('coins_earned'),
-            'compliance_rate'=> $plan?->compliance_rate ?? 0,
-            'sessions'       => $sessions,
+            'total_coins' => $sessions->sum('coins_earned'),
+            'compliance_rate' => $plan?->compliance_rate ?? 0,
+            'sessions' => $sessions,
         ]);
     }
 
     private function calculateStreak(int $clientId): int
     {
         $streak = 0;
-        $date   = Carbon::today();
+        $date = Carbon::today();
 
         while (true) {
             $hasSession = ExerciseSession::where('client_id', $clientId)
@@ -121,7 +122,9 @@ class ProgressController extends Controller
                 ->whereDate('completed_at', $date)
                 ->exists();
 
-            if (!$hasSession) break;
+            if (! $hasSession) {
+                break;
+            }
 
             $streak++;
             $date->subDay();

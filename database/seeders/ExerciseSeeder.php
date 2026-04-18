@@ -257,6 +257,425 @@ class ExerciseSeeder extends Seeder
             Exercise::create(array_merge($ex, ['is_active' => true]));
         }
 
-        $this->command->info('Seeded '.count($exercises).' exercises across Neck, Shoulder, and Elbow/Forearm/Wrist.');
+        // ── Apply standard ROM correct_angles by area + title pattern ────────
+        // Rather than duplicating the entire array, we resolve and update
+        // correct_angles in a second pass. Admin can override any of these in
+        // the Filament panel. The `side` field defaults to 'bilateral'; PTs can
+        // change a specific exercise to 'left' or 'right' for post-surgical clients.
+        Exercise::all()->each(function (Exercise $exercise): void {
+            $angles = $this->resolveAngles($exercise->area, $exercise->title, $exercise->category);
+            if ($angles !== null) {
+                $exercise->update(['correct_angles' => $angles]);
+            }
+        });
+
+        $exerciseCount = Exercise::count();
+        $withRom = Exercise::whereNotNull('correct_angles')->count();
+        $this->command->info("Seeded {$exerciseCount} exercises. {$withRom} have standard ROM tracking rules.");
+    }
+
+    /**
+     * Resolve the correct_angles JSON for an exercise based on body area and title keywords.
+     *
+     * Landmark triplets always use LEFT-side indices; `side: 'bilateral'` instructs
+     * the frontend to also compute the mirrored RIGHT-side angle automatically.
+     *
+     * All clinical ROM bounds (min/max) are per the standard goniometric norms:
+     *   Shoulder Flexion 0–180°, Extension 0–60°, Abduction 0–180°
+     *   Elbow Flexion 0–160°, Extension 0–10°
+     *   Hip Flexion 0–125°, Extension 0–15°, Abduction 0–45°
+     *   Knee Flexion 0–140°, Extension 140–0°
+     *   Neck Lateral 0–45°, Flexion/Extension 0–45°, Rotation 0–60°
+     */
+    private function resolveAngles(string $area, string $title, string $category): ?array
+    {
+        $title = strtolower($title);
+
+        return match ($area) {
+            'neck' => $this->neckAngles($title),
+            'shoulder' => $this->shoulderAngles($title),
+            'elbow_forearm_wrist' => $this->elbowAngles($title),
+            'lower_limb' => $this->lowerLimbAngles($title),
+            'back' => $this->backAngles($title),
+            default => null,
+        };
+    }
+
+    // ── Neck ─────────────────────────────────────────────────────────────────
+
+    private function neckAngles(string $title): ?array
+    {
+        // Rotation exercises — monitor neck rotation via ear-nose-shoulder triangle
+        if (str_contains($title, 'rotation')) {
+            return [$this->jointRule(
+                joint: 'neck_rotation',
+                movement: 'neck_rotation',
+                landmarks: [7, 0, 11],         // L.ear – nose – L.shoulder
+                min: 120, max: 180,             // upright ~180°, full rotate ~120°
+                feedbackLow: 'Relax — you are rotating past a comfortable range',
+                feedbackHigh: 'Rotate your head further in the direction of movement',
+                repJoint: true,
+                upThreshold: 165, downThreshold: 130,
+            )];
+        }
+
+        // Lateral flexion / side bend — require explicit flexion/tilt/bend context
+        // to avoid matching 'lateral raise' (a shoulder exercise in neck area).
+        if (str_contains($title, 'lateral flexion') || str_contains($title, 'lateral tilt') || str_contains($title, 'side bend') || str_contains($title, 'sideways')) {
+            return [$this->jointRule(
+                joint: 'neck_lateral',
+                movement: 'neck_lateral',
+                landmarks: [7, 11, 23],         // L.ear – L.shoulder – L.hip
+                min: 130, max: 180,             // upright ~175°, full tilt ~130°
+                feedbackLow: 'Ease off — excessive lateral tilt',
+                feedbackHigh: 'Tilt your head further toward your shoulder',
+                repJoint: true,
+                upThreshold: 165, downThreshold: 135,
+            )];
+        }
+
+        // Extension exercises (chin up / backward)
+        if (str_contains($title, 'extension') && ! str_contains($title, 'flexion')) {
+            return [$this->jointRule(
+                joint: 'neck_extension',
+                movement: 'neck_extension',
+                landmarks: [7, 11, 23],
+                min: 130, max: 180,
+                feedbackLow: 'Do not overextend your neck',
+                feedbackHigh: 'Extend your head back further',
+                repJoint: true,
+                upThreshold: 165, downThreshold: 135,
+            )];
+        }
+
+        // Flexion (chin to chest) — and combined flex/extension
+        if (str_contains($title, 'flexion') || str_contains($title, 'chin tuck') || str_contains($title, 'retraction') || str_contains($title, 'protraction')) {
+            return [$this->jointRule(
+                joint: 'neck_flexion',
+                movement: 'neck_flexion',
+                landmarks: [7, 11, 23],
+                min: 130, max: 180,
+                feedbackLow: 'Ease off — do not overstretch',
+                feedbackHigh: 'Bring your chin further toward your chest',
+                repJoint: true,
+                upThreshold: 165, downThreshold: 135,
+            )];
+        }
+
+        // Exercises like Dumbbell Shrug, Shoulder Shrug, One-Arm Row, Upright Row,
+        // Reverse Fly, Lateral Raise, Push-Up, Theraband Rows, Bridge, etc. are
+        // categorised under 'neck' area but do not involve measurable neck joint
+        // angles at MediaPipe landmarks. Return null → visibility-based scoring.
+        return null;
+    }
+
+    // ── Shoulder ──────────────────────────────────────────────────────────────
+
+    private function shoulderAngles(string $title): ?array
+    {
+        // Abduction (arm out to side)
+        if (str_contains($title, 'abduction') || str_contains($title, 'lateral raise')) {
+            return [$this->jointRule(
+                joint: 'shoulder_abduction',
+                movement: 'shoulder_abduction',
+                landmarks: [23, 11, 13],        // hip – shoulder – elbow
+                min: 0, max: 180,
+                feedbackLow: 'Lower your arm fully between reps',
+                feedbackHigh: 'Raise your arm higher to the side',
+                repJoint: true,
+                upThreshold: 150, downThreshold: 30,
+            )];
+        }
+
+        // Extension (arm behind body)
+        if (str_contains($title, 'extension')) {
+            return [$this->jointRule(
+                joint: 'shoulder_extension',
+                movement: 'shoulder_extension',
+                landmarks: [23, 11, 13],
+                min: 0, max: 60,
+                feedbackLow: 'Do not hyperextend the shoulder',
+                feedbackHigh: 'Extend your arm further behind you',
+                repJoint: true,
+                upThreshold: 50, downThreshold: 10,
+            )];
+        }
+
+        // External rotation
+        if (str_contains($title, 'external rotation') || str_contains($title, 'ext. rotation')) {
+            return [$this->jointRule(
+                joint: 'shoulder_er',
+                movement: 'shoulder_er',
+                landmarks: [13, 11, 23],        // elbow – shoulder – hip
+                min: 0, max: 90,
+                feedbackLow: 'Do not over-rotate the shoulder outward',
+                feedbackHigh: 'Rotate your arm outward further',
+                repJoint: true,
+                upThreshold: 75, downThreshold: 20,
+            )];
+        }
+
+        // Internal rotation
+        if (str_contains($title, 'internal rotation') || str_contains($title, 'int. rotation')) {
+            return [$this->jointRule(
+                joint: 'shoulder_ir',
+                movement: 'shoulder_ir',
+                landmarks: [13, 11, 23],
+                min: 0, max: 70,
+                feedbackLow: 'Do not over-rotate inward',
+                feedbackHigh: 'Rotate your arm inward further',
+                repJoint: true,
+                upThreshold: 60, downThreshold: 15,
+            )];
+        }
+
+        // Flexion (arm forward/overhead)
+        if (str_contains($title, 'flexion') || str_contains($title, 'forward raise') || str_contains($title, 'overhead') || str_contains($title, 'press')) {
+            return [$this->jointRule(
+                joint: 'shoulder_flexion',
+                movement: 'shoulder_flexion',
+                landmarks: [23, 11, 13],            // hip – shoulder – elbow
+                min: 0, max: 180,
+                feedbackLow: 'Lower your arm fully at the starting position',
+                feedbackHigh: 'Raise your arm higher overhead',
+                repJoint: true,
+                upThreshold: 150, downThreshold: 30,
+            )];
+        }
+
+        // Adduction
+        if (str_contains($title, 'adduction') || str_contains($title, 'cross body')) {
+            return [$this->jointRule(
+                joint: 'shoulder_adduction',
+                movement: 'shoulder_adduction',
+                landmarks: [23, 11, 13],
+                min: 0, max: 30,
+                feedbackLow: 'Ease off — do not over-cross the midline',
+                feedbackHigh: 'Bring your arm further across your body',
+                repJoint: true,
+                upThreshold: 25, downThreshold: 5,
+            )];
+        }
+
+        // Exercises like Shoulder Shrug, Scapular Retraction, Pendulum, Posture
+        // exercises, etc. — not directly trackable via shoulder angle landmarks.
+        // Return null → visibility-based scoring only.
+        return null;
+    }
+
+    // ── Elbow, Forearm & Wrist ────────────────────────────────────────────────
+
+    private function elbowAngles(string $title): ?array
+    {
+        // Extension exercises
+        if (str_contains($title, 'extension') || str_contains($title, 'tricep') || str_contains($title, 'push')) {
+            return [$this->jointRule(
+                joint: 'elbow_extension',
+                movement: 'elbow_extension',
+                landmarks: [11, 13, 15],        // shoulder – elbow – wrist
+                min: 150, max: 180,             // 0–10° extension measured as near-straight
+                feedbackLow: 'Extend your arm fully at the top',
+                feedbackHigh: 'Keep bending — do not lock out too early',
+                repJoint: true,
+                upThreshold: 160, downThreshold: 90,
+            )];
+        }
+
+        // Wrist exercises — track elbow as secondary, wrist angle unavailable in pose
+        if (str_contains($title, 'wrist') || str_contains($title, 'finger')) {
+            // Wrist angles are not directly trackable with MediaPipe Pose (no metacarpal landmarks).
+            // Track elbow flexion as a proxy for forearm positioning.
+            return [$this->jointRule(
+                joint: 'elbow_flexion',
+                movement: 'elbow_flexion',
+                landmarks: [11, 13, 15],
+                min: 70, max: 130,             // stable mid-range for wrist work
+                feedbackLow: 'Keep your elbow slightly bent during this exercise',
+                feedbackHigh: 'Relax your arm — do not over-straighten',
+                repJoint: false,
+            )];
+        }
+
+        // Flexion (bicep curl, elbow bend)
+        if (str_contains($title, 'flexion') || str_contains($title, 'curl') || str_contains($title, 'bicep') || str_contains($title, 'bend')) {
+            return [$this->jointRule(
+                joint: 'elbow_flexion',
+                movement: 'elbow_flexion',
+                landmarks: [11, 13, 15],            // shoulder – elbow – wrist
+                min: 0, max: 160,
+                feedbackLow: 'Extend your arm fully at the bottom',
+                feedbackHigh: 'Curl your arm up further',
+                repJoint: true,
+                upThreshold: 140, downThreshold: 60,
+            )];
+        }
+
+        // No trackable elbow angle for this exercise → visibility-based scoring.
+        return null;
+    }
+
+    // ── Lower Limb ────────────────────────────────────────────────────────────
+
+    private function lowerLimbAngles(string $title): ?array
+    {
+        // Knee-specific exercises
+        if (
+            str_contains($title, 'knee') ||
+            str_contains($title, 'squat') ||
+            str_contains($title, 'lunge') ||
+            str_contains($title, 'step')
+        ) {
+            $rules = [$this->jointRule(
+                joint: 'knee_flexion',
+                movement: 'knee_flexion',
+                landmarks: [23, 25, 27],        // hip – knee – ankle
+                min: 0, max: 140,
+                feedbackLow: 'Straighten your leg fully between reps',
+                feedbackHigh: 'Bend your knee further',
+                repJoint: true,
+                upThreshold: 110, downThreshold: 30,
+            )];
+
+            // Add hip flexion as secondary for squats/lunges
+            if (str_contains($title, 'squat') || str_contains($title, 'lunge')) {
+                $rules[] = $this->jointRule(
+                    joint: 'hip_flexion',
+                    movement: 'hip_flexion',
+                    landmarks: [11, 23, 25],    // shoulder – hip – knee
+                    min: 70, max: 125,
+                    feedbackLow: 'Stand taller at the top of the movement',
+                    feedbackHigh: 'Hinge at the hips more as you lower down',
+                    repJoint: false,
+                    weight: 0.3,
+                );
+            }
+
+            return $rules;
+        }
+
+        // Hip-specific exercises
+        if (
+            str_contains($title, 'hip') ||
+            str_contains($title, 'bridge') ||
+            str_contains($title, 'abduction') ||
+            str_contains($title, 'adduction')
+        ) {
+            if (str_contains($title, 'abduction')) {
+                return [$this->jointRule(
+                    joint: 'hip_abduction',
+                    movement: 'hip_abduction',
+                    landmarks: [23, 25, 27],    // hip – knee – ankle used as proxy
+                    min: 0, max: 45,
+                    feedbackLow: 'Bring your leg back to the starting position',
+                    feedbackHigh: 'Lift your leg further out to the side',
+                    repJoint: true,
+                    upThreshold: 35, downThreshold: 10,
+                )];
+            }
+
+            return [$this->jointRule(
+                joint: 'hip_flexion',
+                movement: 'hip_flexion',
+                landmarks: [11, 23, 25],        // shoulder – hip – knee
+                min: 0, max: 125,
+                feedbackLow: 'Lower your leg to the starting position',
+                feedbackHigh: 'Raise your knee higher toward your chest',
+                repJoint: true,
+                upThreshold: 90, downThreshold: 20,
+            )];
+        }
+
+        // No clearly trackable joint angle for this lower-limb exercise
+        // (e.g. ankle, calf, balance, or postural exercises without a named joint).
+        // Return null → visibility-based scoring only.
+        return null;
+    }
+
+    // ── Back ──────────────────────────────────────────────────────────────────
+
+    private function backAngles(string $title): ?array
+    {
+        // Row variations — elbow flexion at the joint
+        if (str_contains($title, 'row') || str_contains($title, 'pull')) {
+            return [$this->jointRule(
+                joint: 'elbow_flexion',
+                movement: 'elbow_flexion',
+                landmarks: [11, 13, 15],
+                min: 30, max: 150,
+                feedbackLow: 'Extend your arms fully at the front',
+                feedbackHigh: 'Pull your elbows further back',
+                repJoint: true,
+                upThreshold: 130, downThreshold: 50,
+            )];
+        }
+
+        // Hip hinge / deadlift / bridge — hip flexion
+        if (str_contains($title, 'bridge') || str_contains($title, 'deadlift') || str_contains($title, 'hinge')) {
+            return [$this->jointRule(
+                joint: 'hip_flexion',
+                movement: 'hip_flexion',
+                landmarks: [11, 23, 25],
+                min: 0, max: 125,
+                feedbackLow: 'Extend your hips fully at the top',
+                feedbackHigh: 'Hinge forward more at the hips',
+                repJoint: true,
+                upThreshold: 160, downThreshold: 70,
+            )];
+        }
+
+        // Overhead / extension back exercises
+        if (str_contains($title, 'overhead') || str_contains($title, 'extension') || str_contains($title, 'press')) {
+            return [$this->jointRule(
+                joint: 'shoulder_flexion',
+                movement: 'shoulder_flexion',
+                landmarks: [23, 11, 13],
+                min: 0, max: 180,
+                feedbackLow: 'Lower your arms fully',
+                feedbackHigh: 'Reach further overhead',
+                repJoint: true,
+                upThreshold: 150, downThreshold: 30,
+            )];
+        }
+
+        // General back exercises (e.g. core, postural, spine) without a specific
+        // trackable joint angle. Return null → visibility-based scoring only.
+        return null;
+    }
+
+    // ── Joint rule builder ────────────────────────────────────────────────────
+
+    private function jointRule(
+        string $joint,
+        string $movement,
+        array $landmarks,
+        int $min,
+        int $max,
+        string $feedbackLow,
+        string $feedbackHigh,
+        bool $repJoint = false,
+        ?int $upThreshold = null,
+        ?int $downThreshold = null,
+        float $weight = 1.0,
+        string $side = 'bilateral',
+    ): array {
+        $rule = [
+            'joint' => $joint,
+            'movement' => $movement,
+            'side' => $side,
+            'landmarks' => $landmarks,
+            'min' => $min,
+            'max' => $max,
+            'feedback_low' => $feedbackLow,
+            'feedback_high' => $feedbackHigh,
+            'weight' => $weight,
+            'rep_joint' => $repJoint,
+        ];
+
+        if ($repJoint && $upThreshold !== null) {
+            $rule['up_threshold'] = $upThreshold;
+            $rule['down_threshold'] = $downThreshold;
+        }
+
+        return $rule;
     }
 }
