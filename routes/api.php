@@ -149,7 +149,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::patch('/clients/{clientId}/condition', [ClientController::class, 'updateCondition']);
             // ← Phase 3: PT chat (vetted only)
             Route::get('/chat', [ChatController::class, 'index']);
-            Route::post('/chat', [ChatController::class, 'store']);
+            Route::post('/chat', [ChatController::class, 'store'])->middleware('throttle:60,1');
+            Route::get('/chat/unread', [ChatController::class, 'unread']);
+            Route::post('/chat/read', [ChatController::class, 'markRead'])->middleware('throttle:120,1');
             // Phase 4
             Route::get('/earnings', [EarningsController::class, 'index']);
             Route::get('/clients/{clientId}/motion-reports', [MotionReportController::class, 'clientReports']);
@@ -176,7 +178,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // ← Phase 3: chat (no subscription required)
         Route::get('/chat', [ChatController::class, 'index']);
-        Route::post('/chat', [ChatController::class, 'store']);
+        Route::post('/chat', [ChatController::class, 'store'])->middleware('throttle:60,1');
+        Route::get('/chat/unread', [ChatController::class, 'unread']);
+        Route::post('/chat/read', [ChatController::class, 'markRead'])->middleware('throttle:120,1');
         Route::get('/progress', [ProgressController::class, 'index']);
         Route::get('/progress/report/{month}/{year}', [ProgressController::class, 'monthlyReport']);
         Route::get('/rewards', [RewardController::class, 'index']);

@@ -104,6 +104,96 @@ class ExerciseTrackingConfigSeeder extends Seeder
                     'targetROM' => ['neck' => 70],
                 ],
             ],
+            'Cervical Rotation' => [
+                'exercise_type' => 'fundamental_rom',
+                'tracking_config' => [
+                    'joints' => ['neck'],
+                    'mode' => 'fundamental_rom',
+                    'movement' => 'neck_rotation',
+                    'targetROM' => ['neck' => 70],
+                ],
+            ],
+            'Neck Flexion' => [
+                'exercise_type' => 'fundamental_rom',
+                'tracking_config' => [
+                    'joints' => ['neck'],
+                    'mode' => 'fundamental_rom',
+                    'movement' => 'neck_flexion',
+                    'targetROM' => ['neck' => 45],
+                ],
+            ],
+            'Neck Extension' => [
+                'exercise_type' => 'fundamental_rom',
+                'tracking_config' => [
+                    'joints' => ['neck'],
+                    'mode' => 'fundamental_rom',
+                    'movement' => 'neck_extension',
+                    'targetROM' => ['neck' => 45],
+                ],
+            ],
+            'Lateral Flexion' => [
+                'exercise_type' => 'fundamental_rom',
+                'tracking_config' => [
+                    'joints' => ['neck'],
+                    'mode' => 'fundamental_rom',
+                    'movement' => 'neck_lateral',
+                    'targetROM' => ['neck' => 45],
+                ],
+            ],
+            'Lateral Neck Flexion' => [
+                'exercise_type' => 'fundamental_rom',
+                'tracking_config' => [
+                    'joints' => ['neck'],
+                    'mode' => 'fundamental_rom',
+                    'movement' => 'neck_lateral',
+                    'targetROM' => ['neck' => 45],
+                ],
+            ],
+            'Prone Cobra' => [
+                'exercise_type' => 'fundamental_rom',
+                'tracking_config' => [
+                    'joints' => ['spine'],
+                    'mode' => 'fundamental_rom',
+                    'movement' => 'spine_extension',
+                    'targetROM' => ['spine' => 25],
+                ],
+            ],
+            'Stand and Reach' => [
+                'exercise_type' => 'fundamental_rom',
+                'tracking_config' => [
+                    'joints' => ['spine'],
+                    'mode' => 'fundamental_rom',
+                    'movement' => 'spine_flexion',
+                    'targetROM' => ['spine' => 80],
+                ],
+            ],
+            'Sit and Reach' => [
+                'exercise_type' => 'fundamental_rom',
+                'tracking_config' => [
+                    'joints' => ['spine'],
+                    'mode' => 'fundamental_rom',
+                    'movement' => 'spine_flexion',
+                    'targetROM' => ['spine' => 80],
+                ],
+            ],
+            'Shoulder Abduction' => [
+                'exercise_type' => 'fundamental_rom',
+                'tracking_config' => [
+                    'joints' => ['shoulder'],
+                    'mode' => 'fundamental_rom',
+                    'movement' => 'shoulder_abduction',
+                    'targetROM' => ['shoulder' => 180],
+                ],
+            ],
+            'Lateral Raise' => [
+                'exercise_type' => 'fundamental_rom',
+                'tracking_config' => [
+                    'joints' => ['shoulder'],
+                    'mode' => 'fundamental_rom',
+                    'movement' => 'shoulder_abduction',
+                    'targetROM' => ['shoulder' => 90],
+                ],
+            ],
         ];
 
         foreach ($configs as $title => $config) {

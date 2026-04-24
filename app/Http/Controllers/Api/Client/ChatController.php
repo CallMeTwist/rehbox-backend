@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Api\Client;
 
+use App\Events\MessageRead;
 use App\Events\NewMessageReceived;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Chat\MarkChatReadRequest;
+use App\Http\Requests\Chat\SendMessageRequest;
 use App\Models\AppNotification;
 use App\Models\Client;
 use App\Models\Message;
@@ -17,7 +20,6 @@ class ChatController extends Controller
         $user = $request->user();
         $clientId = $request->query('client_id');
 
-        // Auto-resolve for client users
         if (! $clientId && $user->role === 'client') {
             $clientId = $user->client?->id;
         }
@@ -26,35 +28,20 @@ class ChatController extends Controller
             return response()->json(['messages' => []]);
         }
 
-        $messages = Message::where('client_id', $clientId)
+        $messages = Message::query()
+            ->where('client_id', $clientId)
             ->with(['sender:id,name,role'])
             ->orderBy('created_at')
             ->get();
 
-        Message::where('client_id', $clientId)
-            ->where('receiver_id', $user->id)
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
-
         return response()->json(['messages' => $messages]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(SendMessageRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'body' => 'nullable|string|max:5000',
-            'file' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf|max:10240',
-            'client_id' => 'sometimes|integer|exists:clients,id',
-            'receiver_id' => 'sometimes|integer|exists:users,id',
-        ]);
-
-        if (empty($data['body']) && ! $request->hasFile('file')) {
-            return response()->json(['message' => 'Message body or file is required.'], 422);
-        }
-
+        $data = $request->validated();
         $user = $request->user();
 
-        // Resolve client_id
         $clientId = $data['client_id'] ?? null;
         if (! $clientId && $user->role === 'client') {
             $clientId = $user->client?->id;
@@ -65,7 +52,8 @@ class ChatController extends Controller
 
         $client = Client::with(['user', 'physiotherapist'])->findOrFail($clientId);
 
-        // Resolve receiver_id
+        $this->authorizeConversation($user, $client);
+
         $receiverId = $data['receiver_id'] ?? null;
         if (! $receiverId) {
             if ($user->role === 'pt') {
@@ -111,15 +99,108 @@ class ChatController extends Controller
 
         event(new NewMessageReceived($message));
 
-        // Notify the receiver
         AppNotification::create([
             'user_id' => $message->receiver_id,
             'type' => 'message_received',
             'title' => 'New message',
-            'body' => $request->user()->name.': '.(str($message->body)->limit(60) ?: '[file]'),
+            'body' => $user->name.': '.(str($message->body)->limit(60) ?: '[file]'),
             'data' => ['client_id' => $message->client_id],
         ]);
 
         return response()->json(['message' => $message], 201);
+    }
+
+    public function markRead(MarkChatReadRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $clientId = $request->input('client_id');
+
+        if (! $clientId && $user->role === 'client') {
+            $clientId = $user->client?->id;
+        }
+
+        if (! $clientId) {
+            return response()->json(['updated' => 0]);
+        }
+
+        $client = Client::with('physiotherapist')->findOrFail($clientId);
+        $this->authorizeConversation($user, $client);
+
+        $now = now();
+
+        $lastUnread = Message::query()
+            ->where('client_id', $clientId)
+            ->where('receiver_id', $user->id)
+            ->whereNull('read_at')
+            ->orderByDesc('id')
+            ->first();
+
+        $updated = Message::query()
+            ->where('client_id', $clientId)
+            ->where('receiver_id', $user->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => $now]);
+
+        if ($updated > 0) {
+            event(new MessageRead(
+                clientId: (int) $clientId,
+                readerId: (int) $user->id,
+                lastReadMessageId: $lastUnread?->id,
+                readAt: $now->toIso8601String(),
+            ));
+        }
+
+        return response()->json([
+            'updated' => $updated,
+            'last_read_message_id' => $lastUnread?->id,
+            'read_at' => $now->toIso8601String(),
+        ]);
+    }
+
+    public function unread(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->role === 'pt') {
+            $pt = $user->physiotherapist;
+            if (! $pt) {
+                return response()->json(['counts' => [], 'total' => 0]);
+            }
+
+            $counts = Message::query()
+                ->where('receiver_id', $user->id)
+                ->whereNull('read_at')
+                ->whereIn('client_id', $pt->clients()->pluck('clients.id'))
+                ->selectRaw('client_id, COUNT(*) as total')
+                ->groupBy('client_id')
+                ->pluck('total', 'client_id');
+
+            return response()->json([
+                'counts' => $counts,
+                'total' => (int) $counts->sum(),
+            ]);
+        }
+
+        $total = Message::query()
+            ->where('receiver_id', $user->id)
+            ->whereNull('read_at')
+            ->count();
+
+        return response()->json([
+            'counts' => (object) [],
+            'total' => $total,
+        ]);
+    }
+
+    private function authorizeConversation($user, Client $client): void
+    {
+        if ($user->role === 'pt') {
+            $pt = $user->physiotherapist;
+            abort_unless($pt && $client->physiotherapist_id === $pt->id, 403, 'Not your client.');
+
+            return;
+        }
+
+        abort_unless($client->user_id === $user->id, 403, 'Not your conversation.');
     }
 }

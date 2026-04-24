@@ -14,9 +14,11 @@ class NewMessageReceived implements ShouldBroadcast
 
     public function __construct(public Message $message) {}
 
+    /**
+     * @return array<int, PrivateChannel>
+     */
     public function broadcastOn(): array
     {
-        // Broadcast to both sender and receiver channels
         return [
             new PrivateChannel('chat.'.$this->message->client_id),
         ];
@@ -27,6 +29,9 @@ class NewMessageReceived implements ShouldBroadcast
         return 'message.sent';
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function broadcastWith(): array
     {
         return [
@@ -37,6 +42,11 @@ class NewMessageReceived implements ShouldBroadcast
             'client_id' => $this->message->client_id,
             'sender_name' => $this->message->sender->name,
             'sender_role' => $this->message->sender->role,
+            'file_url' => $this->message->file_url,
+            'file_type' => $this->message->file_type,
+            'file_name' => $this->message->file_name,
+            'file_size' => $this->message->file_size,
+            'read_at' => $this->message->read_at,
             'created_at' => $this->message->created_at,
         ];
     }
