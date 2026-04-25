@@ -66,6 +66,7 @@
 use App\Http\Controllers\Api\Auth\ClientAuthController;
 use App\Http\Controllers\Api\Auth\PTAuthController;
 use App\Http\Controllers\Api\ChatFileController;
+use App\Http\Controllers\Api\Client\AssessmentController;
 use App\Http\Controllers\Api\Client\ChatController;
 use App\Http\Controllers\Api\Client\ExerciseCompletionController;
 use App\Http\Controllers\Api\Client\ExerciseLibraryController as ClientExerciseLibraryController;
@@ -170,6 +171,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ── Client routes ─────────────────────────────────────────────────
     Route::prefix('client')->middleware('role:client')->group(function () {
+
+        Route::post('/assessment', [AssessmentController::class, 'store']);
+        Route::get('/assessment', [AssessmentController::class, 'show']);
 
         Route::get('/plan', [PlanController::class, 'myPlan']);
         Route::post('/plans/self', [SelfPlanController::class, 'store']);
