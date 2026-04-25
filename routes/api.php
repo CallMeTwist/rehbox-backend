@@ -116,8 +116,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/me', function (Request $request) {
         $user = $request->user()->load(['physiotherapist', 'client']);
+        $client = $user->client;
 
-        return response()->json(['user' => $user]);
+        return response()->json([
+            'user' => $user,
+            'subscription_plan' => $client?->subscription_plan ?? null,
+            'assessment_completed_at' => $client?->assessment_completed_at ?? null,
+        ]);
     });
 
     // Chat file download (shared — both PT and client)

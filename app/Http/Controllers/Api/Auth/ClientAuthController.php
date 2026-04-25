@@ -88,6 +88,8 @@ class ClientAuthController extends Controller
                 'role' => $user->role,
                 'client_id' => $client?->id,
                 'subscription_status' => $client?->subscription_status,
+                'subscription_plan' => $client?->subscription_plan ?? null,
+                'assessment_completed_at' => $client?->assessment_completed_at ?? null,
                 'coin_balance' => $client?->coin_balance,
                 'language_preference' => $client?->language_preference,
             ],
