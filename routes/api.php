@@ -67,6 +67,7 @@ use App\Http\Controllers\Api\Auth\ClientAuthController;
 use App\Http\Controllers\Api\Auth\PTAuthController;
 use App\Http\Controllers\Api\ChatFileController;
 use App\Http\Controllers\Api\Client\ChatController;
+use App\Http\Controllers\Api\Client\ExerciseCompletionController;
 use App\Http\Controllers\Api\Client\ExerciseLibraryController as ClientExerciseLibraryController;
 use App\Http\Controllers\Api\Client\PlanController;
 // ← add
@@ -171,6 +172,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/plan', [PlanController::class, 'myPlan']);
         Route::get('/exercises', [ClientExerciseLibraryController::class, 'index']);
+        Route::post('/exercises/{exercise}/log-completion', [ExerciseCompletionController::class, 'store']);
         Route::post('/subscribe', [SubscriptionController::class, 'initialize']);
 
         Route::post('/push/subscribe', [PushController::class, 'subscribe']);
