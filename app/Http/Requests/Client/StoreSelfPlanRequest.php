@@ -22,7 +22,7 @@ class StoreSelfPlanRequest extends FormRequest
             'exercise_ids' => ['required', 'array', 'min:1', 'max:3'],
             'exercise_ids.*' => [
                 'integer',
-                Rule::exists('exercises', 'id')->where('is_personalized', false),
+                Rule::exists('exercises', 'id')->where('is_personalized', 0),
             ],
             'scheduled_days' => ['required', 'array', 'min:1'],
             'scheduled_days.*' => ['string', Rule::in(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])],

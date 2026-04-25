@@ -75,6 +75,7 @@ use App\Http\Controllers\Api\Client\ProfileController;
 use App\Http\Controllers\Api\Client\ProgressController;
 use App\Http\Controllers\Api\Client\PushController;
 use App\Http\Controllers\Api\Client\RewardController;
+use App\Http\Controllers\Api\Client\SelfPlanController;
 // ← add
 use App\Http\Controllers\Api\Client\SessionController;
 use App\Http\Controllers\Api\Client\ShopController;
@@ -171,6 +172,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('client')->middleware('role:client')->group(function () {
 
         Route::get('/plan', [PlanController::class, 'myPlan']);
+        Route::post('/plans/self', [SelfPlanController::class, 'store']);
+        Route::put('/plans/self/{plan}', [SelfPlanController::class, 'update']);
+        Route::delete('/plans/self/{plan}', [SelfPlanController::class, 'destroy']);
         Route::get('/exercises', [ClientExerciseLibraryController::class, 'index']);
         Route::post('/exercises/{exercise}/log-completion', [ExerciseCompletionController::class, 'store']);
         Route::post('/subscribe', [SubscriptionController::class, 'initialize']);
