@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureSubscribed;
 use App\Http\Middleware\EnsureVetted;
+use App\Http\Middleware\RequirePaidTier;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'vetted' => EnsureVetted::class,
             'subscribed' => EnsureSubscribed::class,
             'role' => RoleMiddleware::class,
+            'require.paid.tier' => RequirePaidTier::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
