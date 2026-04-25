@@ -7,6 +7,7 @@ use App\Http\Requests\Client\StoreSelfPlanRequest;
 use App\Models\ExercisePlan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SelfPlanController extends Controller
 {
@@ -15,21 +16,25 @@ class SelfPlanController extends Controller
         $client = $request->user()->client;
         abort_if($client === null, 403, 'Client profile missing.');
 
-        ExercisePlan::query()
-            ->where('created_by_client_id', $client->id)
-            ->where('status', 'active')
-            ->update(['status' => 'completed']);
+        $plan = DB::transaction(function () use ($request, $client) {
+            ExercisePlan::query()
+                ->where('created_by_client_id', $client->id)
+                ->where('status', 'active')
+                ->update(['status' => 'completed']);
 
-        $plan = ExercisePlan::create([
-            'client_id' => $client->id,
-            'created_by_client_id' => $client->id,
-            'is_self_built' => true,
-            'title' => $request->validated('title'),
-            'status' => 'active',
-            'start_date' => now(),
-        ]);
+            $plan = ExercisePlan::create([
+                'client_id' => $client->id,
+                'created_by_client_id' => $client->id,
+                'is_self_built' => true,
+                'title' => $request->validated('title'),
+                'status' => 'active',
+                'start_date' => now(),
+            ]);
 
-        $this->syncExercises($plan, $request);
+            $this->syncExercises($plan, $request);
+
+            return $plan;
+        });
 
         return response()->json(['data' => $plan->load('exercises')], 201);
     }

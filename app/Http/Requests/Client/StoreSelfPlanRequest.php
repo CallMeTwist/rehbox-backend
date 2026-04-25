@@ -22,6 +22,7 @@ class StoreSelfPlanRequest extends FormRequest
             'exercise_ids' => ['required', 'array', 'min:1', 'max:3'],
             'exercise_ids.*' => [
                 'integer',
+                // integer 0 (not false) — Rule::exists where() binding doesn't coerce bool
                 Rule::exists('exercises', 'id')->where('is_personalized', 0),
             ],
             'scheduled_days' => ['required', 'array', 'min:1'],
