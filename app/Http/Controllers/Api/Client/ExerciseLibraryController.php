@@ -13,6 +13,7 @@ class ExerciseLibraryController extends Controller
     public function index(Request $request): JsonResponse
     {
         $client = $request->user()->client;
+        abort_if($client === null, 403, 'Client profile missing.');
 
         if ($client->isFree()) {
             $exercises = Exercise::query()

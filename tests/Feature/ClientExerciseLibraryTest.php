@@ -20,6 +20,9 @@ it('free client gets a flat list of generalized exercises only', function () {
     $payload = $response->json('data');
     expect($payload)->toBeArray()->toHaveCount(1);
     expect($payload[0]['title'])->toBe('Squat');
+    foreach ($payload as $row) {
+        expect($row['is_personalized'])->toBeFalse();
+    }
 });
 
 it('paid client gets exercises grouped by category', function () {
@@ -34,4 +37,12 @@ it('paid client gets exercises grouped by category', function () {
     $response->assertOk();
     $grouped = $response->json('data');
     expect($grouped)->toHaveKeys(['lower_limb', 'back']);
+    $titles = collect($grouped)->flatten(1)->pluck('title')->all();
+    expect($titles)->toContain('Squat', 'Hip Flex');
+});
+
+it('returns 403 when authenticated user has no client profile', function () {
+    $user = User::factory()->create(['role' => 'client']);
+
+    $this->actingAs($user)->getJson('/api/client/exercises')->assertStatus(403);
 });
