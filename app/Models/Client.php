@@ -54,10 +54,19 @@ class Client extends Model
                 || $this->subscription_expires_at->isFuture());
     }
 
+    public function isFree(): bool
+    {
+        return $this->subscription_plan === 'free';
+    }
+
+    public function isPaid(): bool
+    {
+        return in_array($this->subscription_plan, ['standard', 'enterprise'], true);
+    }
+
     public function hasStandardAccess(): bool
     {
-        return in_array($this->subscription_plan, ['standard', 'enterprise'])
-            && $this->isSubscribed();
+        return $this->isPaid() && $this->isSubscribed();
     }
 
     public function coinTransactions()
