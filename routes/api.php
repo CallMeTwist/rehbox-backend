@@ -67,6 +67,7 @@ use App\Http\Controllers\Api\Auth\ClientAuthController;
 use App\Http\Controllers\Api\Auth\PTAuthController;
 use App\Http\Controllers\Api\ChatFileController;
 use App\Http\Controllers\Api\Client\ChatController;
+use App\Http\Controllers\Api\Client\ExerciseLibraryController as ClientExerciseLibraryController;
 use App\Http\Controllers\Api\Client\PlanController;
 // ← add
 use App\Http\Controllers\Api\Client\ProfileController;
@@ -169,6 +170,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('client')->middleware('role:client')->group(function () {
 
         Route::get('/plan', [PlanController::class, 'myPlan']);
+        Route::get('/exercises', [ClientExerciseLibraryController::class, 'index']);
         Route::post('/subscribe', [SubscriptionController::class, 'initialize']);
 
         Route::post('/push/subscribe', [PushController::class, 'subscribe']);
