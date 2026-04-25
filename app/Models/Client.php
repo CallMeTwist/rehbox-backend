@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Client extends Model
 {
@@ -82,6 +83,11 @@ class Client extends Model
     public function reminders()
     {
         return $this->hasMany(Reminder::class);
+    }
+
+    public function assessment(): HasOne
+    {
+        return $this->hasOne(ClientAssessment::class);
     }
 
     // Award coins and log the transaction
