@@ -27,8 +27,11 @@ class ExerciseLibraryController extends Controller
         $grouped = Exercise::query()
             ->orderBy('title')
             ->get()
-            ->groupBy('category')
-            ->map(fn ($group) => ExerciseResource::collection($group));
+            ->groupBy(fn ($e) => $e->category ?? 'other')
+            ->map(fn ($group) => $group->map(
+                fn ($e) => (new ExerciseResource($e))->toArray($request)
+            )->values()->all())
+            ->all();
 
         return response()->json(['data' => $grouped]);
     }

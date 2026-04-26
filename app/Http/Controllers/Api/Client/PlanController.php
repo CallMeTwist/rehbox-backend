@@ -12,7 +12,7 @@ class PlanController extends Controller
     {
         $client = $request->user()->client;
 
-        if (! $client->isSubscribed()) {
+        if (! $client->isFree() && ! $client->isSubscribed()) {
             return response()->json([
                 'message' => 'Subscribe to unlock your personalized plan.',
                 'subscription_status' => $client->subscription_status,

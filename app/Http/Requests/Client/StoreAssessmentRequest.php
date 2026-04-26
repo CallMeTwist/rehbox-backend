@@ -18,26 +18,26 @@ class StoreAssessmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'medical_conditions' => ['required', 'string'],
+            'medical_conditions' => ['nullable', 'string'],
             'height_cm' => ['required', 'integer', 'between:50,300'],
             'weight_kg' => ['required', 'integer', 'between:20,400'],
-            'past_injuries' => ['required', 'string'],
-            'allergies' => ['required', 'string'],
+            'past_injuries' => ['nullable', 'string'],
+            'allergies' => ['nullable', 'string'],
             'current_medications' => ['nullable', 'string'],
             'family_health_history' => ['nullable', 'string'],
 
             'smokes' => ['required', 'boolean'],
             'alcohol_consumption' => ['required', Rule::in(['rarely', 'occasionally', 'all_the_time'])],
-            'diet_preferences' => ['required', 'string'],
+            'diet_preferences' => ['nullable', 'string'],
             'stress_level' => ['required', 'integer', 'between:1,10'],
 
             'primary_goals' => ['required', 'array', 'min:1'],
             'primary_goals.*' => ['string'],
-            'secondary_goals' => ['required', 'string'],
+            'secondary_goals' => ['nullable', 'string'],
             'time_frame' => ['required', Rule::in(['30d', '60d', '90d', '6mo', '1yr'])],
 
             'exercise_habit' => ['required', Rule::in(['newbie', 'warrior', 'none'])],
-            'weekly_schedule' => ['required', 'string', 'max:120'],
+            'weekly_schedule' => ['nullable', 'string', 'max:120'],
             'comfort_level' => ['required', 'array', 'min:1'],
             'comfort_level.*' => ['string'],
             'limitations' => ['nullable', 'string'],

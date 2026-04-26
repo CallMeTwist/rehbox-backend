@@ -75,6 +75,7 @@ use App\Http\Controllers\Api\Client\PlanController;
 use App\Http\Controllers\Api\Client\ProfileController;
 use App\Http\Controllers\Api\Client\ProgressController;
 use App\Http\Controllers\Api\Client\PushController;
+use App\Http\Controllers\Api\Client\ReminderController;
 use App\Http\Controllers\Api\Client\RewardController;
 use App\Http\Controllers\Api\Client\SelfPlanController;
 // ← add
@@ -185,6 +186,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::post('/push/subscribe', [PushController::class, 'subscribe']);
         Route::delete('/push/unsubscribe', [PushController::class, 'unsubscribe']);
+
+        Route::get('/reminders', [ReminderController::class, 'index']);
+        Route::post('/reminders', [ReminderController::class, 'store']);
+        Route::put('/reminders/{reminder}', [ReminderController::class, 'update']);
+        Route::patch('/reminders/{reminder}/toggle', [ReminderController::class, 'toggle']);
+        Route::delete('/reminders/{reminder}', [ReminderController::class, 'destroy']);
 
         // ← Phase 3: profile + language
         Route::get('/profile', [ProfileController::class, 'show']);

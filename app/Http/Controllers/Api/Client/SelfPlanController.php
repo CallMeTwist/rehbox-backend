@@ -16,6 +16,18 @@ class SelfPlanController extends Controller
         $client = $request->user()->client;
         abort_if($client === null, 403, 'Client profile missing.');
 
+        if ($client->isFree()) {
+            $existing = ExercisePlan::query()
+                ->where('created_by_client_id', $client->id)
+                ->exists();
+
+            if ($existing) {
+                return response()->json([
+                    'message' => 'Free plan limit reached. You can have only 1 plan — edit or delete it to make a new one.',
+                ], 422);
+            }
+        }
+
         $plan = DB::transaction(function () use ($request, $client) {
             ExercisePlan::query()
                 ->where('created_by_client_id', $client->id)
