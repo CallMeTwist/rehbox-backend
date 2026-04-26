@@ -40,6 +40,7 @@ class ClientAuthController extends Controller
             'physiotherapist_id' => $pt?->id,
             'phone' => $data['phone'] ?? null,
             'subscription_status' => 'inactive',
+            'subscription_plan' => 'free',
         ]);
 
         $token = $user->createToken('client-token')->plainTextToken;
@@ -56,6 +57,7 @@ class ClientAuthController extends Controller
                 'role' => $user->role,
                 'client_id' => $client->id,
                 'subscription_status' => 'inactive',
+                'subscription_plan' => $client->subscription_plan,
                 'pt_name' => $pt?->user?->name,
             ],
         ], 201);
@@ -88,6 +90,8 @@ class ClientAuthController extends Controller
                 'role' => $user->role,
                 'client_id' => $client?->id,
                 'subscription_status' => $client?->subscription_status,
+                'subscription_plan' => $client?->subscription_plan ?? null,
+                'assessment_completed_at' => $client?->assessment_completed_at ?? null,
                 'coin_balance' => $client?->coin_balance,
                 'language_preference' => $client?->language_preference,
             ],

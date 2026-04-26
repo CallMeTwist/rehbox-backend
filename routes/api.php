@@ -66,13 +66,18 @@
 use App\Http\Controllers\Api\Auth\ClientAuthController;
 use App\Http\Controllers\Api\Auth\PTAuthController;
 use App\Http\Controllers\Api\ChatFileController;
+use App\Http\Controllers\Api\Client\AssessmentController;
 use App\Http\Controllers\Api\Client\ChatController;
+use App\Http\Controllers\Api\Client\ExerciseCompletionController;
+use App\Http\Controllers\Api\Client\ExerciseLibraryController as ClientExerciseLibraryController;
 use App\Http\Controllers\Api\Client\PlanController;
 // ← add
 use App\Http\Controllers\Api\Client\ProfileController;
 use App\Http\Controllers\Api\Client\ProgressController;
 use App\Http\Controllers\Api\Client\PushController;
+use App\Http\Controllers\Api\Client\ReminderController;
 use App\Http\Controllers\Api\Client\RewardController;
+use App\Http\Controllers\Api\Client\SelfPlanController;
 // ← add
 use App\Http\Controllers\Api\Client\SessionController;
 use App\Http\Controllers\Api\Client\ShopController;
@@ -116,8 +121,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/me', function (Request $request) {
         $user = $request->user()->load(['physiotherapist', 'client']);
+        $client = $user->client;
 
-        return response()->json(['user' => $user]);
+        return response()->json([
+            'user' => $user,
+            'subscription_plan' => $client?->subscription_plan ?? null,
+            'assessment_completed_at' => $client?->assessment_completed_at ?? null,
+        ]);
     });
 
     // Chat file download (shared — both PT and client)
@@ -163,11 +173,25 @@ Route::middleware('auth:sanctum')->group(function () {
     // ── Client routes ─────────────────────────────────────────────────
     Route::prefix('client')->middleware('role:client')->group(function () {
 
+        Route::post('/assessment', [AssessmentController::class, 'store']);
+        Route::get('/assessment', [AssessmentController::class, 'show']);
+
         Route::get('/plan', [PlanController::class, 'myPlan']);
+        Route::post('/plans/self', [SelfPlanController::class, 'store']);
+        Route::put('/plans/self/{plan}', [SelfPlanController::class, 'update']);
+        Route::delete('/plans/self/{plan}', [SelfPlanController::class, 'destroy']);
+        Route::get('/exercises', [ClientExerciseLibraryController::class, 'index']);
+        Route::post('/exercises/{exercise}/log-completion', [ExerciseCompletionController::class, 'store']);
         Route::post('/subscribe', [SubscriptionController::class, 'initialize']);
 
         Route::post('/push/subscribe', [PushController::class, 'subscribe']);
         Route::delete('/push/unsubscribe', [PushController::class, 'unsubscribe']);
+
+        Route::get('/reminders', [ReminderController::class, 'index']);
+        Route::post('/reminders', [ReminderController::class, 'store']);
+        Route::put('/reminders/{reminder}', [ReminderController::class, 'update']);
+        Route::patch('/reminders/{reminder}/toggle', [ReminderController::class, 'toggle']);
+        Route::delete('/reminders/{reminder}', [ReminderController::class, 'destroy']);
 
         // ← Phase 3: profile + language
         Route::get('/profile', [ProfileController::class, 'show']);
