@@ -18,6 +18,7 @@ class Exercise extends Model
         'is_personalized',
         'exercise_type',
         'tracking_config',
+        'access_tier', 'video_source', 'video_path', 'youtube_url', 'thumbnail_path',
     ];
 
     protected $casts = [
