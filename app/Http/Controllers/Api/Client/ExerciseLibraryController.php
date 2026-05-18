@@ -15,24 +15,27 @@ class ExerciseLibraryController extends Controller
         $client = $request->user()->client;
         abort_if($client === null, 403, 'Client profile missing.');
 
-        if ($client->isFree()) {
-            $exercises = Exercise::query()
-                ->where('is_personalized', false)
-                ->orderBy('title')
-                ->get();
+        $query = Exercise::query()
+            ->where('is_active', true)
+            ->where('is_personalized', false)
+            ->orderBy('area')
+            ->orderBy('category')
+            ->orderBy('title');
 
-            return response()->json(['data' => ExerciseResource::collection($exercises)]);
+        if ($area = $request->query('area')) {
+            $query->where('area', $area);
+        }
+        if ($category = $request->query('category')) {
+            $query->where('category', $category);
+        }
+        if ($tier = $request->query('access_tier')) {
+            $query->where('access_tier', $tier);
         }
 
-        $grouped = Exercise::query()
-            ->orderBy('title')
-            ->get()
-            ->groupBy(fn ($e) => $e->category ?? 'other')
-            ->map(fn ($group) => $group->map(
-                fn ($e) => (new ExerciseResource($e))->toArray($request)
-            )->values()->all())
-            ->all();
+        $exercises = $query->get();
 
-        return response()->json(['data' => $grouped]);
+        return response()->json([
+            'data' => ExerciseResource::collection($exercises)->toArray($request),
+        ]);
     }
 }
