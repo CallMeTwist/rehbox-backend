@@ -35,6 +35,19 @@ class Exercise extends Model
         return $this->$column ?? $this->instructions_en;
     }
 
+    public function youtubeId(): ?string
+    {
+        if ($this->video_source !== 'youtube' || ! $this->youtube_url) {
+            return null;
+        }
+
+        if (preg_match('/(?:v=|youtu\.be\/)([A-Za-z0-9_\-]{11})/', $this->youtube_url, $m)) {
+            return $m[1];
+        }
+
+        return null;
+    }
+
     public function plans()
     {
         return $this->belongsToMany(ExercisePlan::class, 'plan_exercises')

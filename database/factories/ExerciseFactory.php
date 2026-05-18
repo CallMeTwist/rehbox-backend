@@ -23,4 +23,15 @@ class ExerciseFactory extends Factory
             'video_path' => 'exercises/videos/test/test.mp4',
         ];
     }
+
+    public function free(): static
+    {
+        return $this->state(fn () => [
+            'area' => 'general',
+            'access_tier' => 'free',
+            'video_source' => 'youtube',
+            'video_path' => null,
+            'youtube_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        ]);
+    }
 }
