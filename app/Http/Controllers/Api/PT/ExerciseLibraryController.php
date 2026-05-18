@@ -29,6 +29,10 @@ class ExerciseLibraryController extends Controller
             $query->where('difficulty', $request->difficulty);
         }
 
+        if ($request->filled('access_tier')) {
+            $query->where('access_tier', $request->query('access_tier'));
+        }
+
         $exercises = $query->orderBy('area')->orderBy('category')->orderBy('title')->get();
 
         return response()->json(['data' => $exercises]);
