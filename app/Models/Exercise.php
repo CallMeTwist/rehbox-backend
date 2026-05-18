@@ -27,6 +27,11 @@ class Exercise extends Model
         'tracking_config' => 'array',
     ];
 
+    protected static function booted(): void
+    {
+        static::observe(\App\Observers\ExerciseObserver::class);
+    }
+
     // Return instructions in client's preferred language
     public function getInstructionsForLanguage(string $lang): ?string
     {
