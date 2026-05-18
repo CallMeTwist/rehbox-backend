@@ -82,6 +82,20 @@ return new class extends Migration
         Schema::table('exercises', function (Blueprint $table) {
             $table->dropColumn(['access_tier', 'video_source', 'video_path', 'youtube_url', 'thumbnail_path']);
         });
-        // area / category stay as varchar(50) — not worth re-tightening to ENUM during rollback.
+
+        $isMysql = DB::getDriverName() === 'mysql';
+
+        if ($isMysql) {
+            // Restore area and category back to their pre-Task-1 ENUM definitions.
+            Schema::table('exercises', function (Blueprint $table) {
+                $table->enum('area', ['neck', 'shoulder', 'elbow_forearm_wrist', 'back', 'lower_limb'])
+                    ->default('neck')
+                    ->change();
+                $table->enum('category', ['strengthening', 'stretching', 'rom', 'functional', 'endurance'])
+                    ->default('strengthening')
+                    ->change();
+            });
+        }
+        // SQLite: varchar(50) columns are already correct; re-running up() on a fresh DB rebuilds fine.
     }
 };

@@ -15,6 +15,8 @@ it('has the new video and tier columns after migration', function () {
 });
 
 it('accepts the new area enum values', function () {
+    expect(Schema::getColumnType('exercises', 'area'))->toBeIn(['string', 'varchar']);
+
     foreach (['back', 'chest', 'elbow_forearm_wrist', 'general', 'head_neck', 'lower_limbs', 'pelvic', 'upper_limbs'] as $area) {
         $e = Exercise::factory()->create(['area' => $area, 'access_tier' => $area === 'general' ? 'free' : 'paid']);
         expect($e->area)->toBe($area);
@@ -22,6 +24,8 @@ it('accepts the new area enum values', function () {
 });
 
 it('accepts the new category enum values', function () {
+    expect(Schema::getColumnType('exercises', 'category'))->toBeIn(['string', 'varchar']);
+
     $categories = ['strengthening', 'stretching', 'rom', 'functional', 'endurance',
         'lung_expansion', 'chest_wall_mobilization', 'airways_clearance',
         'chest_abs', 'cool_down', 'core_stability', 'legs', 'strengthening_arm'];
