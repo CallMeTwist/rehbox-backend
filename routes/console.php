@@ -10,4 +10,3 @@ Artisan::command('inspire', function () {
 
 Schedule::command('subscriptions:check-expired')->daily();
 Schedule::command('reminders:send')->everyFifteenMinutes();
-Schedule::command('subscriptions:check-expired')->daily();

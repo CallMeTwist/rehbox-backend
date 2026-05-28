@@ -3,15 +3,23 @@
 namespace App\Http\Controllers\Api\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\ExerciseCompletion;
 use App\Models\ExerciseSession;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 
 class ProgressController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $client = $request->user()->client;
+        abort_if($client === null, 403, 'Client profile missing.');
+
+        if ($client->isFree()) {
+            return response()->json($this->freeStreakPayload($client));
+        }
+
         $now = Carbon::now();
 
         // Sessions this month
@@ -131,5 +139,60 @@ class ProgressController extends Controller
         }
 
         return $streak;
+    }
+
+    /**
+     * @return array{current_streak: int, longest_streak: int, last_7_days: list<bool>}
+     */
+    private function freeStreakPayload(\App\Models\Client $client): array
+    {
+        $tz = 'Africa/Lagos';
+        $today = now($tz)->startOfDay();
+
+        $sessionDates = $client->exerciseSessions()
+            ->whereNotNull('completed_at')
+            ->pluck('completed_at');
+
+        $completionDates = ExerciseCompletion::query()
+            ->where('client_id', $client->id)
+            ->pluck('completed_at');
+
+        $allDates = $sessionDates->merge($completionDates)
+            ->map(fn ($ts) => Carbon::parse($ts)->setTimezone($tz)->startOfDay()->toDateString())
+            ->unique()
+            ->sort()
+            ->values();
+
+        $current = 0;
+        $cursor = $today->copy();
+        while ($allDates->contains($cursor->toDateString())) {
+            $current++;
+            $cursor->subDay();
+        }
+
+        $longest = 0;
+        $run = 0;
+        $prev = null;
+        foreach ($allDates as $d) {
+            $date = Carbon::parse($d, $tz);
+            if ($prev !== null && $date->copy()->subDay()->toDateString() === $prev) {
+                $run++;
+            } else {
+                $run = 1;
+            }
+            $longest = max($longest, $run);
+            $prev = $d;
+        }
+
+        $last7 = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $last7[] = $allDates->contains($today->copy()->subDays($i)->toDateString());
+        }
+
+        return [
+            'current_streak' => $current,
+            'longest_streak' => $longest,
+            'last_7_days' => $last7,
+        ];
     }
 }

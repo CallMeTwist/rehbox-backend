@@ -21,6 +21,10 @@ class ExerciseCompletionController extends Controller
             'completed_at' => now(),
         ]);
 
+        if ($client->isFree()) {
+            $client->awardCoins(50, "Generalized exercise: {$exercise->title}", $exercise);
+        }
+
         return response()->json(['data' => $completion], 201);
     }
 }

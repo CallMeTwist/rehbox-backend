@@ -18,43 +18,43 @@ class SubscriptionController extends Controller
         ]);
 
         $amounts = [
-            'basic'    => 500000,  // ₦5,000 in kobo
-            'standard' => 1000000, // ₦10,000
-            'premium'  => 2000000, // ₦20,000
+            'basic' => 350000,  // ₦3,500 in kobo
+            'standard' => \App\Models\AppSetting::getValue('standard_plan_price_kobo', 200000),
+            'premium' => 2000000, // ₦20,000
         ];
 
-        $client    = $request->user()->client;
-        $reference = 'RHB-' . strtoupper(Str::random(12));
+        $client = $request->user()->client;
+        $reference = 'RHB-'.strtoupper(Str::random(12));
 
         // Initialize transaction on Paystack
         $response = Http::withToken(config('services.paystack.secret'))
             ->post('https://api.paystack.co/transaction/initialize', [
-                'email'     => $request->user()->email,
-                'amount'    => $amounts[$data['plan']],
+                'email' => $request->user()->email,
+                'amount' => $amounts[$data['plan']],
                 'reference' => $reference,
-                'callback_url' => config('app.frontend_url') . '/client/home',
-                'metadata'  => [
+                'callback_url' => config('app.frontend_url').'/client/home',
+                'metadata' => [
                     'client_id' => $client->id,
-                    'plan'      => $data['plan'],
+                    'plan' => $data['plan'],
                 ],
             ]);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             return response()->json(['message' => 'Payment initialization failed.'], 500);
         }
 
         // Save pending subscription
         Subscription::create([
-            'client_id'           => $client->id,
-            'paystack_reference'  => $reference,
-            'plan'                => $data['plan'],
-            'amount'              => $amounts[$data['plan']] / 100,
-            'status'              => 'pending',
+            'client_id' => $client->id,
+            'paystack_reference' => $reference,
+            'plan' => $data['plan'],
+            'amount' => $amounts[$data['plan']] / 100,
+            'status' => 'pending',
         ]);
 
         return response()->json([
             'authorization_url' => $response->json('data.authorization_url'),
-            'reference'         => $reference,
+            'reference' => $reference,
         ]);
     }
 
@@ -63,29 +63,29 @@ class SubscriptionController extends Controller
     {
         // Verify signature
         $signature = $request->header('x-paystack-signature');
-        $computed  = hash_hmac('sha512', $request->getContent(), config('services.paystack.secret'));
+        $computed = hash_hmac('sha512', $request->getContent(), config('services.paystack.secret'));
 
         if ($signature !== $computed) {
             return response()->json(['message' => 'Invalid signature.'], 400);
         }
 
         $event = $request->json('event');
-        $data  = $request->json('data');
+        $data = $request->json('data');
 
         if ($event === 'charge.success') {
             $subscription = Subscription::where('paystack_reference', $data['reference'])->first();
 
             if ($subscription && $subscription->status === 'pending') {
                 $subscription->update([
-                    'status'     => 'active',
-                    'starts_at'  => now(),
+                    'status' => 'active',
+                    'starts_at' => now(),
                     'expires_at' => now()->addMonth(),
                 ]);
 
                 // Activate client
                 $subscription->client->update([
-                    'subscription_status'      => 'active',
-                    'subscription_expires_at'  => now()->addMonth(),
+                    'subscription_status' => 'active',
+                    'subscription_expires_at' => now()->addMonth(),
                 ]);
             }
         }

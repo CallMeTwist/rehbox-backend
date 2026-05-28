@@ -7,12 +7,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('free client gets a flat list of generalized exercises only', function () {
+it('free client gets a flat list of free-tier generalized exercises only', function () {
     $user = User::factory()->create(['role' => 'client']);
     Client::factory()->create(['user_id' => $user->id, 'subscription_plan' => 'free']);
 
-    Exercise::factory()->create(['is_personalized' => false, 'title' => 'Squat']);
-    Exercise::factory()->create(['is_personalized' => true, 'title' => 'Custom Hip']);
+    Exercise::factory()->create(['is_personalized' => false, 'access_tier' => 'free', 'title' => 'Squat']);
+    Exercise::factory()->create(['is_personalized' => false, 'access_tier' => 'paid', 'title' => 'Squat Paid']);
+    Exercise::factory()->create(['is_personalized' => true, 'access_tier' => 'free', 'title' => 'Custom Hip']);
 
     $response = $this->actingAs($user)->getJson('/api/client/exercises');
 
@@ -22,6 +23,7 @@ it('free client gets a flat list of generalized exercises only', function () {
     expect($payload[0]['title'])->toBe('Squat');
     foreach ($payload as $row) {
         expect($row['is_personalized'])->toBeFalse();
+        expect($row['access_tier'])->toBe('free');
     }
 });
 
@@ -45,7 +47,7 @@ it('paid client gets a flat list of generalized exercises', function () {
     expect($payload[0]['title'])->toBe('Squat');
 });
 
-it('returns paid exercises with is_locked=true for free clients', function () {
+it('excludes paid exercises entirely for free clients', function () {
     $user = User::factory()->create(['role' => 'client']);
     Client::factory()->for($user)->create(['subscription_plan' => 'free']);
 
@@ -56,12 +58,11 @@ it('returns paid exercises with is_locked=true for free clients', function () {
     $response->assertOk();
 
     $data = $response->json('data');
-    $locked = collect($data)->where('access_tier', 'paid')->first();
-    $unlocked = collect($data)->where('access_tier', 'free')->first();
+    $paidCount = collect($data)->where('access_tier', 'paid')->count();
+    $freeCount = collect($data)->where('access_tier', 'free')->count();
 
-    expect($locked['is_locked'])->toBeTrue();
-    expect($locked['video']['url'])->toBeNull();
-    expect($unlocked['is_locked'])->toBeFalse();
+    expect($paidCount)->toBe(0);
+    expect($freeCount)->toBe(1);
 });
 
 it('filters by area and category', function () {

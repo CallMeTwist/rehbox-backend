@@ -8,9 +8,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('creates a self-built plan for a free client', function () {
+it('creates a self-built plan for a subscribed client', function () {
     $user = User::factory()->create(['role' => 'client']);
-    $client = Client::factory()->create(['user_id' => $user->id, 'subscription_plan' => 'free']);
+    $client = Client::factory()->create([
+        'user_id' => $user->id,
+        'subscription_plan' => 'standard',
+        'subscription_status' => 'active',
+        'subscription_expires_at' => now()->addMonth(),
+    ]);
     $exercises = Exercise::factory()->count(3)->create(['is_personalized' => false]);
 
     $this->actingAs($user)->postJson('/api/client/plans/self', [
@@ -26,7 +31,12 @@ it('creates a self-built plan for a free client', function () {
 
 it('rejects more than 3 exercises', function () {
     $user = User::factory()->create(['role' => 'client']);
-    Client::factory()->create(['user_id' => $user->id, 'subscription_plan' => 'free']);
+    Client::factory()->create([
+        'user_id' => $user->id,
+        'subscription_plan' => 'standard',
+        'subscription_status' => 'active',
+        'subscription_expires_at' => now()->addMonth(),
+    ]);
     $exercises = Exercise::factory()->count(4)->create(['is_personalized' => false]);
 
     $this->actingAs($user)->postJson('/api/client/plans/self', [
@@ -38,7 +48,12 @@ it('rejects more than 3 exercises', function () {
 
 it('rejects personalized exercises', function () {
     $user = User::factory()->create(['role' => 'client']);
-    Client::factory()->create(['user_id' => $user->id, 'subscription_plan' => 'free']);
+    Client::factory()->create([
+        'user_id' => $user->id,
+        'subscription_plan' => 'standard',
+        'subscription_status' => 'active',
+        'subscription_expires_at' => now()->addMonth(),
+    ]);
     $ex = Exercise::factory()->create(['is_personalized' => true]);
 
     $this->actingAs($user)->postJson('/api/client/plans/self', [
@@ -50,7 +65,12 @@ it('rejects personalized exercises', function () {
 
 it('updates an existing self-built plan owned by the client', function () {
     $user = User::factory()->create(['role' => 'client']);
-    $client = Client::factory()->create(['user_id' => $user->id, 'subscription_plan' => 'free']);
+    $client = Client::factory()->create([
+        'user_id' => $user->id,
+        'subscription_plan' => 'standard',
+        'subscription_status' => 'active',
+        'subscription_expires_at' => now()->addMonth(),
+    ]);
     $exercises = Exercise::factory()->count(2)->create(['is_personalized' => false]);
 
     $plan = ExercisePlan::create([
@@ -73,8 +93,17 @@ it('updates an existing self-built plan owned by the client', function () {
 
 it('forbids updating a self-built plan owned by another client', function () {
     $user = User::factory()->create(['role' => 'client']);
-    $client = Client::factory()->create(['user_id' => $user->id, 'subscription_plan' => 'free']);
-    $otherClient = Client::factory()->create(['subscription_plan' => 'free']);
+    $client = Client::factory()->create([
+        'user_id' => $user->id,
+        'subscription_plan' => 'standard',
+        'subscription_status' => 'active',
+        'subscription_expires_at' => now()->addMonth(),
+    ]);
+    $otherClient = Client::factory()->create([
+        'subscription_plan' => 'standard',
+        'subscription_status' => 'active',
+        'subscription_expires_at' => now()->addMonth(),
+    ]);
     $exercise = Exercise::factory()->create(['is_personalized' => false]);
 
     $plan = ExercisePlan::create([
@@ -95,7 +124,12 @@ it('forbids updating a self-built plan owned by another client', function () {
 
 it('deletes a self-built plan', function () {
     $user = User::factory()->create(['role' => 'client']);
-    $client = Client::factory()->create(['user_id' => $user->id, 'subscription_plan' => 'free']);
+    $client = Client::factory()->create([
+        'user_id' => $user->id,
+        'subscription_plan' => 'standard',
+        'subscription_status' => 'active',
+        'subscription_expires_at' => now()->addMonth(),
+    ]);
 
     $plan = ExercisePlan::create([
         'client_id' => $client->id,

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Client;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ExerciseResource;
 use App\Models\Exercise;
+use App\Support\ConditionAreaMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,15 @@ class ExerciseLibraryController extends Controller
             ->orderBy('area')
             ->orderBy('category')
             ->orderBy('title');
+
+        if ($client->isFree()) {
+            $query->where('access_tier', 'free');
+
+            $area = ConditionAreaMap::areaFor($client->primary_condition);
+            if ($area !== null) {
+                $query->where('area', $area);
+            }
+        }
 
         if ($area = $request->query('area')) {
             $query->where('area', $area);

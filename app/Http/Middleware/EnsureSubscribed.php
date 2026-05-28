@@ -35,11 +35,11 @@ class EnsureSubscribed
         $user = $request->user();
         $client = $user?->client;
 
-        if (! $client || ! $client->isSubscribed()) {
+        if (! $client || ! $client->hasStandardAccess()) {
             return response()->json([
                 'message' => 'An active subscription is required.',
                 'code' => 'SUBSCRIPTION_REQUIRED',
-            ], 402);  // 402 Payment Required — not 403
+            ], 403);
         }
 
         return $next($request);

@@ -20,7 +20,9 @@ it('awards coins via awardCoins() and creates a CoinTransaction when completing 
     $clientUser = User::factory()->create(['role' => 'client']);
     $client = Client::factory()->create([
         'user_id' => $clientUser->id,
+        'subscription_plan' => 'standard',
         'subscription_status' => 'active',
+        'subscription_expires_at' => now()->addMonth(),
         'coin_balance' => 0,
     ]);
 

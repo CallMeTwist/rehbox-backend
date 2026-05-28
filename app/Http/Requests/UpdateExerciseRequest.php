@@ -74,14 +74,8 @@ class UpdateExerciseRequest extends FormRequest
             if ($area === 'general' && $tier !== 'free') {
                 $v->errors()->add('access_tier', 'General Exercises must be set to the free tier.');
             }
-            if ($area === 'general' && $source !== 'youtube') {
-                $v->errors()->add('video_source', 'General Exercises must use a YouTube URL.');
-            }
             if ($tier === 'paid' && $source !== 'upload') {
                 $v->errors()->add('video_source', 'Paid exercises must use an uploaded video.');
-            }
-            if ($tier === 'free' && $source !== 'youtube') {
-                $v->errors()->add('video_source', 'Free exercises must use a YouTube URL.');
             }
         });
     }

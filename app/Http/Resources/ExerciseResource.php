@@ -76,7 +76,7 @@ class ExerciseResource extends JsonResource
                 return $disk->temporaryUrl($this->video_path, now()->addMinutes(30));
             }
 
-            return $disk->url($this->video_path);
+            return '/storage/'.$this->video_path;
         }
 
         return null;
@@ -85,13 +85,13 @@ class ExerciseResource extends JsonResource
     private function resolveThumbnailUrl(): ?string
     {
         if ($this->illustration_url) {
-            return $this->illustration_url;
+            return '/storage/'.$this->illustration_url;
         }
         if ($this->video_source === 'youtube' && ($id = $this->youtubeId())) {
             return "https://i.ytimg.com/vi/{$id}/hqdefault.jpg";
         }
         if ($this->thumbnail_path) {
-            return Storage::disk(config('rehbox.exercise_video_disk'))->url($this->thumbnail_path);
+            return '/storage/'.$this->thumbnail_path;
         }
 
         return null;

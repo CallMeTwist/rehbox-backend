@@ -19,6 +19,7 @@ class ClientAuthController extends Controller
             'password' => 'required|confirmed|min:8',
             'phone' => 'nullable|string',
             'activation_code' => 'nullable|string|exists:physiotherapists,activation_code',
+            'subscription_plan' => 'nullable|in:free,standard,premium',
             'agreed_to_terms' => 'required|accepted',
         ]);
 
@@ -40,7 +41,7 @@ class ClientAuthController extends Controller
             'physiotherapist_id' => $pt?->id,
             'phone' => $data['phone'] ?? null,
             'subscription_status' => 'inactive',
-            'subscription_plan' => 'free',
+            'subscription_plan' => $data['subscription_plan'] ?? 'free',
         ]);
 
         $token = $user->createToken('client-token')->plainTextToken;

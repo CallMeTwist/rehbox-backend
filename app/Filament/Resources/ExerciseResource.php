@@ -91,13 +91,8 @@ class ExerciseResource extends Resource
                         ->live()
                         ->afterStateUpdated(function ($state, Forms\Set $set) {
                             $set('category', null);
-                            if ($state === 'general') {
-                                $set('access_tier', 'free');
-                                $set('video_source', 'youtube');
-                            } else {
-                                $set('access_tier', 'paid');
-                                $set('video_source', 'upload');
-                            }
+                            $set('access_tier', $state === 'general' ? 'free' : 'paid');
+                            $set('video_source', 'upload');
                         }),
 
                     Forms\Components\Select::make('category')
@@ -116,13 +111,13 @@ class ExerciseResource extends Resource
                         ->live(),
 
                     Forms\Components\Select::make('access_tier')
-                        ->options(['free' => 'Free (YouTube)', 'paid' => 'Paid (Uploaded video)'])
+                        ->options(['free' => 'Free', 'paid' => 'Paid'])
                         ->required()
                         ->live()
                         ->disabled(fn (Forms\Get $get) => $get('area') === 'general')
                         ->dehydrated()
                         ->afterStateUpdated(function ($state, Forms\Set $set) {
-                            $set('video_source', $state === 'free' ? 'youtube' : 'upload');
+                            $set('video_source', 'upload');
                         }),
                 ])->columns(3),
 
@@ -145,7 +140,6 @@ class ExerciseResource extends Resource
                         ))
                         ->acceptedFileTypes(['video/mp4', 'video/quicktime'])
                         ->maxSize(30 * 1024)
-                        ->chunkSize(5 * 1024 * 1024)
                         ->visible(fn (Forms\Get $get) => $get('video_source') === 'upload')
                         ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                             if ($state && ! $get('title')) {
