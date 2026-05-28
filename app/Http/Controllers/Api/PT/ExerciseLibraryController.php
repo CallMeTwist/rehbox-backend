@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\PT;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ExerciseResource;
 use App\Models\Exercise;
 use Illuminate\Http\Request;
 
@@ -29,13 +30,17 @@ class ExerciseLibraryController extends Controller
             $query->where('difficulty', $request->difficulty);
         }
 
+        if ($request->filled('access_tier')) {
+            $query->where('access_tier', $request->query('access_tier'));
+        }
+
         $exercises = $query->orderBy('area')->orderBy('category')->orderBy('title')->get();
 
-        return response()->json(['data' => $exercises]);
+        return ExerciseResource::collection($exercises);
     }
 
     public function show(Exercise $exercise)
     {
-        return response()->json($exercise);
+        return new ExerciseResource($exercise);
     }
 }

@@ -13,10 +13,25 @@ class ExerciseFactory extends Factory
     {
         return [
             'title' => fake()->words(3, true),
-            'category' => fake()->randomElement(['head_neck', 'upper_limb', 'back', 'lower_limb']),
+            'area' => fake()->randomElement(['back', 'chest', 'elbow_forearm_wrist', 'general', 'head_neck', 'lower_limbs', 'pelvic', 'upper_limbs']),
+            'category' => fake()->randomElement(['strengthening', 'stretching', 'rom', 'functional', 'endurance']),
             'difficulty' => 'beginner',
             'description' => fake()->sentence(),
             'is_active' => true,
+            'access_tier' => 'paid',
+            'video_source' => 'upload',
+            'video_path' => 'exercises/videos/test/test.mp4',
         ];
+    }
+
+    public function free(): static
+    {
+        return $this->state(fn () => [
+            'area' => 'general',
+            'access_tier' => 'free',
+            'video_source' => 'youtube',
+            'video_path' => null,
+            'youtube_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        ]);
     }
 }

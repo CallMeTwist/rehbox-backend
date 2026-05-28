@@ -18,6 +18,7 @@ class Exercise extends Model
         'is_personalized',
         'exercise_type',
         'tracking_config',
+        'access_tier', 'video_source', 'video_path', 'youtube_url', 'thumbnail_path',
     ];
 
     protected $casts = [
@@ -26,12 +27,30 @@ class Exercise extends Model
         'tracking_config' => 'array',
     ];
 
+    protected static function booted(): void
+    {
+        static::observe(\App\Observers\ExerciseObserver::class);
+    }
+
     // Return instructions in client's preferred language
     public function getInstructionsForLanguage(string $lang): ?string
     {
         $column = 'instructions_'.$lang;
 
         return $this->$column ?? $this->instructions_en;
+    }
+
+    public function youtubeId(): ?string
+    {
+        if ($this->video_source !== 'youtube' || ! $this->youtube_url) {
+            return null;
+        }
+
+        if (preg_match('/(?:v=|youtu\.be\/)([A-Za-z0-9_\-]{11})/', $this->youtube_url, $m)) {
+            return $m[1];
+        }
+
+        return null;
     }
 
     public function plans()

@@ -42,6 +42,36 @@ class ExerciseResource extends Resource
         'knee_extension' => ['label' => 'Knee Extension',        'max' => 140, 'landmarks' => '23, 25, 27 (hip–knee–ankle)'],
     ];
 
+    /**
+     * Mirrors the folder tree: which exercise types are valid for each body region.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const REGION_TYPES = [
+        'back' => ['rom', 'strengthening', 'stretching', 'functional'],
+        'chest' => ['chest_wall_mobilization', 'lung_expansion', 'airways_clearance', 'strengthening'],
+        'elbow_forearm_wrist' => ['rom', 'strengthening', 'stretching', 'functional'],
+        'general' => ['chest_abs', 'cool_down', 'core_stability', 'legs', 'strengthening_arm', 'stretching'],
+        'head_neck' => ['rom', 'strengthening', 'stretching', 'functional'],
+        'lower_limbs' => ['rom', 'strengthening', 'stretching', 'functional'],
+        'pelvic' => ['strengthening', 'stretching', 'functional'],
+        'upper_limbs' => ['rom', 'strengthening', 'stretching', 'endurance', 'functional'],
+    ];
+
+    private const AREA_LABELS = [
+        'back' => 'Back', 'chest' => 'Chest', 'elbow_forearm_wrist' => 'Elbow, Forearm & Wrist',
+        'general' => 'General Exercises (Free tier)', 'head_neck' => 'Head & Neck',
+        'lower_limbs' => 'Lower Limbs', 'pelvic' => 'Pelvic', 'upper_limbs' => 'Upper Limbs',
+    ];
+
+    private const CATEGORY_LABELS = [
+        'strengthening' => 'Strengthening', 'stretching' => 'Stretching', 'rom' => 'ROM (Range of Motion)',
+        'functional' => 'Functional', 'endurance' => 'Endurance', 'lung_expansion' => 'Lung Expansion',
+        'chest_wall_mobilization' => 'Chest Wall Mobilization', 'airways_clearance' => 'Airways Clearance',
+        'chest_abs' => 'Chest & Abs', 'cool_down' => 'Cool Down', 'core_stability' => 'Core Stability',
+        'legs' => 'Legs', 'strengthening_arm' => 'Strengthening (Arm)',
+    ];
+
     public static function form(Form $form): Form
     {
         $romOptions = collect(self::ROM_REFERENCE)
@@ -51,43 +81,95 @@ class ExerciseResource extends Resource
         return $form->schema([
             Forms\Components\TextInput::make('title')->required(),
 
-            Forms\Components\Select::make('area')
-                ->label('Body Area')
-                ->options([
-                    'neck' => 'Neck',
-                    'shoulder' => 'Shoulder',
-                    'elbow_forearm_wrist' => 'Elbow, Forearm & Wrist',
-                    'back' => 'Back',
-                    'lower_limb' => 'Lower Limb',
-                ])->required(),
+            Forms\Components\Section::make('Folder mapping')
+                ->description('These map to the upload folder structure.')
+                ->schema([
+                    Forms\Components\Select::make('area')
+                        ->label('Body Region')
+                        ->options(self::AREA_LABELS)
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(function ($state, Forms\Set $set) {
+                            $set('category', null);
+                            $set('access_tier', $state === 'general' ? 'free' : 'paid');
+                            $set('video_source', 'upload');
+                        }),
 
-            Forms\Components\Select::make('category')
-                ->label('Exercise Type')
-                ->options([
-                    'strengthening' => 'Strengthening',
-                    'stretching' => 'Stretching',
-                    'rom' => 'Range of Motion (ROM)',
-                    'functional' => 'Functional',
-                    'endurance' => 'Endurance',
-                ])->required(),
+                    Forms\Components\Select::make('category')
+                        ->label('Exercise Type')
+                        ->options(function (Forms\Get $get) {
+                            $area = $get('area');
+                            if (! $area || ! isset(self::REGION_TYPES[$area])) {
+                                return self::CATEGORY_LABELS;
+                            }
 
-            Forms\Components\Select::make('difficulty')
-                ->options([
-                    'beginner' => 'Beginner',
-                    'intermediate' => 'Intermediate',
-                    'advanced' => 'Advanced',
-                ])->default('beginner'),
+                            return collect(self::REGION_TYPES[$area])
+                                ->mapWithKeys(fn ($cat) => [$cat => self::CATEGORY_LABELS[$cat] ?? $cat])
+                                ->all();
+                        })
+                        ->required()
+                        ->live(),
+
+                    Forms\Components\Select::make('access_tier')
+                        ->options(['free' => 'Free', 'paid' => 'Paid'])
+                        ->required()
+                        ->live()
+                        ->disabled(fn (Forms\Get $get) => $get('area') === 'general')
+                        ->dehydrated()
+                        ->afterStateUpdated(function ($state, Forms\Set $set) {
+                            $set('video_source', 'upload');
+                        }),
+                ])->columns(3),
+
+            Forms\Components\Section::make('Video source')
+                ->schema([
+                    Forms\Components\Select::make('video_source')
+                        ->options(['upload' => 'Upload (.mp4)', 'youtube' => 'YouTube URL'])
+                        ->required()
+                        ->live()
+                        ->disabled(fn (Forms\Get $get) => in_array($get('access_tier'), ['free', 'paid'], true))
+                        ->dehydrated(),
+
+                    Forms\Components\FileUpload::make('video_path')
+                        ->label('Video file')
+                        ->disk(config('rehbox.exercise_video_disk'))
+                        ->directory(fn (Forms\Get $get) => sprintf(
+                            'exercises/videos/%s/%s',
+                            $get('area') ?: 'misc',
+                            $get('category') ?: 'misc',
+                        ))
+                        ->acceptedFileTypes(['video/mp4', 'video/quicktime'])
+                        ->maxSize(30 * 1024)
+                        ->visible(fn (Forms\Get $get) => $get('video_source') === 'upload')
+                        ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                            if ($state && ! $get('title')) {
+                                $base = pathinfo(is_string($state) ? $state : $state->getClientOriginalName(), PATHINFO_FILENAME);
+                                $set('title', \Illuminate\Support\Str::headline($base));
+                            }
+                        })
+                        ->helperText('Max 30 MB. Larger files: re-encode to H.264 720p ~2 Mbps.'),
+
+                    Forms\Components\TextInput::make('youtube_url')
+                        ->label('YouTube URL')
+                        ->placeholder('https://www.youtube.com/watch?v=...')
+                        ->url()
+                        ->rule('regex:/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//i')
+                        ->visible(fn (Forms\Get $get) => $get('video_source') === 'youtube'),
+                ]),
 
             Forms\Components\Grid::make(2)->schema([
                 Forms\Components\TextInput::make('default_sets')->numeric()->default(3),
                 Forms\Components\TextInput::make('default_reps')->numeric()->default(10),
             ]),
 
-            Forms\Components\FileUpload::make('illustration_url')
-                ->image()->directory('exercises/illustrations'),
-
-            Forms\Components\TextInput::make('video_url')
-                ->url()->placeholder('https://...'),
+            Forms\Components\Section::make('Thumbnail override (optional)')
+                ->description('Leave blank to auto-generate (FFmpeg first-frame for uploads, YouTube thumbnail for free).')
+                ->schema([
+                    Forms\Components\FileUpload::make('illustration_url')
+                        ->image()
+                        ->disk(config('rehbox.exercise_video_disk'))
+                        ->directory('exercises/illustrations'),
+                ])->collapsed(),
 
             Forms\Components\Tabs::make('Instructions')->tabs([
                 Forms\Components\Tabs\Tab::make('English')->schema([
@@ -270,21 +352,16 @@ class ExerciseResource extends Resource
     {
         return $table->columns([
             Tables\Columns\TextColumn::make('title')->searchable(),
-            Tables\Columns\BadgeColumn::make('area')->label('Area')->colors([
-                'primary' => 'neck',
-                'success' => 'shoulder',
-                'warning' => 'elbow_forearm_wrist',
-                'danger' => 'back',
-                'secondary' => 'lower_limb',
-            ]),
-            Tables\Columns\BadgeColumn::make('category')->label('Type')->colors([
-                'primary' => 'strengthening',
-                'success' => 'stretching',
-                'warning' => 'rom',
-                'danger' => 'functional',
-                'secondary' => 'endurance',
-            ]),
+            Tables\Columns\BadgeColumn::make('area')->label('Area'),
+            Tables\Columns\BadgeColumn::make('category')->label('Type'),
             Tables\Columns\BadgeColumn::make('difficulty'),
+            Tables\Columns\BadgeColumn::make('access_tier')
+                ->colors(['success' => 'free', 'primary' => 'paid']),
+            Tables\Columns\IconColumn::make('video_source')
+                ->icons([
+                    'heroicon-o-cloud-arrow-up' => 'upload',
+                    'heroicon-o-play-circle' => 'youtube',
+                ]),
             Tables\Columns\IconColumn::make('is_active')->boolean(),
             Tables\Columns\IconColumn::make('correct_angles')
                 ->label('ROM Tracking')
@@ -296,20 +373,9 @@ class ExerciseResource extends Resource
                 ->falseColor('gray'),
         ])
             ->filters([
-                SelectFilter::make('area')->label('Body Area')->options([
-                    'neck' => 'Neck',
-                    'shoulder' => 'Shoulder',
-                    'elbow_forearm_wrist' => 'Elbow, Forearm & Wrist',
-                    'back' => 'Back',
-                    'lower_limb' => 'Lower Limb',
-                ]),
-                SelectFilter::make('category')->label('Exercise Type')->options([
-                    'strengthening' => 'Strengthening',
-                    'stretching' => 'Stretching',
-                    'rom' => 'Range of Motion (ROM)',
-                    'functional' => 'Functional',
-                    'endurance' => 'Endurance',
-                ]),
+                SelectFilter::make('area')->label('Body Region')->options(self::AREA_LABELS),
+                SelectFilter::make('category')->label('Exercise Type')->options(self::CATEGORY_LABELS),
+                SelectFilter::make('access_tier')->options(['free' => 'Free', 'paid' => 'Paid']),
             ]);
     }
 

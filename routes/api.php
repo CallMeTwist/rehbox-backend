@@ -177,9 +177,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/assessment', [AssessmentController::class, 'show']);
 
         Route::get('/plan', [PlanController::class, 'myPlan']);
-        Route::post('/plans/self', [SelfPlanController::class, 'store']);
-        Route::put('/plans/self/{plan}', [SelfPlanController::class, 'update']);
-        Route::delete('/plans/self/{plan}', [SelfPlanController::class, 'destroy']);
         Route::get('/exercises', [ClientExerciseLibraryController::class, 'index']);
         Route::post('/exercises/{exercise}/log-completion', [ExerciseCompletionController::class, 'store']);
         Route::post('/subscribe', [SubscriptionController::class, 'initialize']);
@@ -197,22 +194,27 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::patch('/profile', [ProfileController::class, 'update']);
         Route::patch('/profile/language', [ProfileController::class, 'updateLanguage']);
-        // routes/api.php — inside client group, no subscription required
-        Route::post('/connect-pt', [ProfileController::class, 'connectPT']);
 
-        // ← Phase 3: chat (no subscription required)
-        Route::get('/chat', [ChatController::class, 'index']);
-        Route::post('/chat', [ChatController::class, 'store'])->middleware('throttle:60,1');
-        Route::get('/chat/unread', [ChatController::class, 'unread']);
-        Route::post('/chat/read', [ChatController::class, 'markRead'])->middleware('throttle:120,1');
         Route::get('/progress', [ProgressController::class, 'index']);
         Route::get('/progress/report/{month}/{year}', [ProgressController::class, 'monthlyReport']);
         Route::get('/rewards', [RewardController::class, 'index']);
-        Route::get('/shop', [ShopController::class, 'index']);
-        Route::get('/shop/orders', [ShopController::class, 'myOrders']);
 
-        // ← Phase 3: sessions (subscription required)
+        // ← Phase 3: subscription required
         Route::middleware('subscribed')->group(function () {
+            Route::post('/connect-pt', [ProfileController::class, 'connectPT']);
+
+            Route::get('/chat', [ChatController::class, 'index']);
+            Route::post('/chat', [ChatController::class, 'store'])->middleware('throttle:60,1');
+            Route::get('/chat/unread', [ChatController::class, 'unread']);
+            Route::post('/chat/read', [ChatController::class, 'markRead'])->middleware('throttle:120,1');
+
+            Route::get('/shop', [ShopController::class, 'index']);
+            Route::get('/shop/orders', [ShopController::class, 'myOrders']);
+
+            Route::post('/plans/self', [SelfPlanController::class, 'store']);
+            Route::put('/plans/self/{plan}', [SelfPlanController::class, 'update']);
+            Route::delete('/plans/self/{plan}', [SelfPlanController::class, 'destroy']);
+
             Route::post('/sessions', [SessionController::class, 'start']);
             Route::put('/sessions/{session}/complete', [SessionController::class, 'complete']);
             Route::get('/sessions/history', [SessionController::class, 'history']);

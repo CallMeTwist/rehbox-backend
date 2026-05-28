@@ -29,14 +29,8 @@ class ReminderController extends Controller
         $client = $request->user()->client;
         abort_if($client === null, 403, 'Client profile missing.');
 
-        if ($client->isFree()) {
-            $existing = Reminder::query()->where('client_id', $client->id)->count();
-
-            if ($existing >= 1) {
-                return response()->json([
-                    'message' => 'Free plan allows 1 reminder. Delete it to create a new one, or upgrade to Standard.',
-                ], 422);
-            }
+        if ($client->isFree() && $client->reminders()->count() >= 1) {
+            abort(403, 'Upgrade to add more reminders.');
         }
 
         $reminder = Reminder::create([

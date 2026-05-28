@@ -5,15 +5,15 @@ namespace App\Http\Controllers\Api\Client;
 use App\Http\Controllers\Controller;
 use App\Models\PushSubscription;
 use Illuminate\Http\Request;
-use Minishlink\WebPush\WebPush;
 use Minishlink\WebPush\Subscription;
+use Minishlink\WebPush\WebPush;
 
 class PushController extends Controller
 {
     public function subscribe(Request $request)
     {
         $data = $request->validate([
-            'endpoint'   => 'required|string',
+            'endpoint' => 'required|string',
             'public_key' => 'required|string',
             'auth_token' => 'required|string',
         ]);
@@ -29,6 +29,7 @@ class PushController extends Controller
     public function unsubscribe(Request $request)
     {
         PushSubscription::where('user_id', $request->user()->id)->delete();
+
         return response()->json(['message' => 'Unsubscribed.']);
     }
 
@@ -36,19 +37,21 @@ class PushController extends Controller
     public static function sendToUser(int $userId, string $title, string $body): void
     {
         $sub = PushSubscription::where('user_id', $userId)->first();
-        if (!$sub) return;
+        if (! $sub) {
+            return;
+        }
 
         $webPush = new WebPush([
             'VAPID' => [
-                'subject'    => config('app.vapid.subject'),
-                'publicKey'  => config('services.vapid.public'),
+                'subject' => config('services.vapid.subject'),
+                'publicKey' => config('services.vapid.public'),
                 'privateKey' => config('services.vapid.private'),
             ],
         ]);
 
         $webPush->queueNotification(
             Subscription::create([
-                'endpoint'  => $sub->endpoint,
+                'endpoint' => $sub->endpoint,
                 'publicKey' => $sub->public_key,
                 'authToken' => $sub->auth_token,
             ]),
