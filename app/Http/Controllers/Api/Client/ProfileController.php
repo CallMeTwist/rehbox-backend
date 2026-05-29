@@ -25,6 +25,7 @@ class ProfileController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
+                'avatar_url' => $user->avatar_url,
             ],
             'client' => [
                 'id' => $client->id,
@@ -86,6 +87,27 @@ class ProfileController extends Controller
         ]);
 
         return response()->json(['message' => 'Language updated.']);
+    }
+
+    public function uploadAvatar(Request $request): JsonResponse
+    {
+        $request->validate([
+            'avatar' => 'required|image|max:5120',
+        ]);
+
+        $user = $request->user();
+
+        if ($user->avatar_url) {
+            $old = ltrim(str_replace('/storage/', '', $user->avatar_url), '/');
+            \Storage::disk('public')->delete($old);
+        }
+
+        $path = $request->file('avatar')->store('avatars', 'public');
+        $url = '/storage/'.$path;
+
+        $user->update(['avatar_url' => $url]);
+
+        return response()->json(['avatar_url' => $url]);
     }
 
     public function connectPT(Request $request): JsonResponse

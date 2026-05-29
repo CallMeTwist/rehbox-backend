@@ -89,6 +89,7 @@ class ClientAuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
+                'avatar_url' => $user->avatar_url,
                 'client_id' => $client?->id,
                 'subscription_status' => $client?->subscription_status,
                 'subscription_plan' => $client?->subscription_plan ?? null,

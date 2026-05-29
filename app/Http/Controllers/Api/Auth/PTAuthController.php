@@ -14,16 +14,16 @@ class PTAuthController extends Controller
     public function register(Request $request)
     {
         $data = $request->validate([
-            'name'              => 'required|string|max:255',
-            'email'             => 'required|email|unique:users,email',
-            'password'          => ['required', 'confirmed', Password::min(8)],
-            'phone'             => 'required|string',
-            'license_number'    => 'required|string',
-            'hospital_or_clinic'=> 'nullable|string',
-            'specialty'         => 'nullable|string',
-            'city'              => 'nullable|string',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => ['required', 'confirmed', Password::min(8)],
+            'phone' => 'required|string',
+            'license_number' => 'required|string',
+            'hospital_or_clinic' => 'nullable|string',
+            'specialty' => 'nullable|string',
+            'city' => 'nullable|string',
             'credential_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'agreed_to_terms'   => 'required|accepted',
+            'agreed_to_terms' => 'required|accepted',
         ]);
 
         // Store credential document
@@ -33,34 +33,34 @@ class PTAuthController extends Controller
 
         // Create user
         $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
+            'name' => $data['name'],
+            'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role'     => 'pt',
+            'role' => 'pt',
         ]);
 
         // Create physiotherapist profile
         Physiotherapist::create([
-            'user_id'              => $user->id,
-            'license_number'       => $data['license_number'],
-            'hospital_or_clinic'   => $data['hospital_or_clinic'] ?? null,
-            'specialty'            => $data['specialty'] ?? null,
-            'phone'                => $data['phone'],
-            'city'                 => $data['city'] ?? null,
+            'user_id' => $user->id,
+            'license_number' => $data['license_number'],
+            'hospital_or_clinic' => $data['hospital_or_clinic'] ?? null,
+            'specialty' => $data['specialty'] ?? null,
+            'phone' => $data['phone'],
+            'city' => $data['city'] ?? null,
             'credential_document_path' => $docPath,
-            'vetting_status'       => 'pending',
+            'vetting_status' => 'pending',
         ]);
 
         $token = $user->createToken('pt-token')->plainTextToken;
 
         return response()->json([
             'message' => 'Registration successful. Your account is under review (up to 48 hours).',
-            'token'   => $token,
-            'user'    => [
-                'id'             => $user->id,
-                'name'           => $user->name,
-                'email'          => $user->email,
-                'role'           => $user->role,
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
                 'vetting_status' => 'pending',
             ],
         ], 201);
@@ -69,7 +69,7 @@ class PTAuthController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate([
-            'email'    => 'required|email',
+            'email' => 'required|email',
             'password' => 'required',
         ]);
 
@@ -77,7 +77,7 @@ class PTAuthController extends Controller
             ->where('role', 'pt')
             ->first();
 
-        if (!$user || !Hash::check($data['password'], $user->password)) {
+        if (! $user || ! Hash::check($data['password'], $user->password)) {
             return response()->json(['message' => 'Invalid credentials.'], 401);
         }
 
@@ -86,13 +86,14 @@ class PTAuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user'  => [
-                'id'             => $user->id,
-                'name'           => $user->name,
-                'email'          => $user->email,
-                'role'           => $user->role,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'avatar_url' => $user->avatar_url,
                 'vetting_status' => $pt?->vetting_status,
-                'activation_code'=> $pt?->activation_code,
+                'activation_code' => $pt?->activation_code,
             ],
         ]);
     }

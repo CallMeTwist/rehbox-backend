@@ -148,6 +148,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/profile', [PTProfileController::class, 'show']);
         Route::patch('/profile', [PTProfileController::class, 'update']);
+        Route::post('/profile/avatar', [PTProfileController::class, 'uploadAvatar']);
 
         Route::middleware('vetted')->group(function () {
             Route::get('/clients', [ClientController::class, 'index']);
@@ -194,6 +195,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::patch('/profile', [ProfileController::class, 'update']);
         Route::patch('/profile/language', [ProfileController::class, 'updateLanguage']);
+        Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar']);
 
         Route::get('/progress', [ProgressController::class, 'index']);
         Route::get('/progress/report/{month}/{year}', [ProgressController::class, 'monthlyReport']);
